@@ -1,9 +1,8 @@
 import { getImage } from '../image/appender'
 import { PdfKitMock } from '../model/pdf-kit-mock'
-import { UserInformation } from '../model/user-information'
+import { SignatureOptions } from '../model/signature-options'
 import { DEFAULT_BYTE_RANGE_PLACEHOLDER, DEFAULT_SIGNATURE_LENGTH } from './const'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
-import { SignatureOptions } from '../model/signature-options'
 
 const specialCharacters = [
   'á',
@@ -34,8 +33,8 @@ const pdfkitAddPlaceholder = ({
   pdf: PdfKitMock
   pdfBuffer: Buffer
   signatureLength?: number
-  byteRangePlaceholder?: string,
-  signatureOptions: SignatureOptions,
+  byteRangePlaceholder?: string
+  signatureOptions: SignatureOptions
 }) => {
   const acroFormPosition = pdfBuffer.lastIndexOf('/Type /AcroForm')
   const isAcroFormExists = acroFormPosition !== -1
@@ -138,6 +137,10 @@ const getAnnotationApparance = (
 }
 
 const getStream = (signatureOptions: SignatureOptions, imgIndex: number) => {
+  const generatedContent = generateSignatureContents(
+    signatureOptions.annotationAppearanceOptions.signatureDetails,
+  )
+
   return getConvertedText(`
     1.0 1.0 1.0 rg
     0.0 0.0 0.0 RG
@@ -147,19 +150,31 @@ const getStream = (signatureOptions: SignatureOptions, imgIndex: number) => {
     /Img${imgIndex} Do
     Q
     0 0 0 rg
-    BT
-    0 Tr
-    /f1 10.0 Tf
-    1.4 0 0 1 20 45.97412 Tm
-    (Aláírta: ${signatureOptions}) Tj
-    ET
-    BT
-    0 Tr
-    /f1 10.0 Tf
-    1.4 0 0 1 20 33.56006 Tm
-    (${new Date().toISOString().slice(0, 10)}) Tj
-    ET
+    ${generatedContent}
     Q`)
+}
+
+const generateSignatureContents = (details: string[]) => {
+  const starterPosition = 20
+  const YOffset = 9
+
+  const detailsAsPdfContent = details.map((detail, index) => {
+    const detailAsPdfContent = generateSignatureContent(detail, index * YOffset + starterPosition)
+    return detailAsPdfContent
+  })
+
+  return detailsAsPdfContent.join()
+}
+
+const generateSignatureContent = (detail: string, YPosition: number) => {
+  return `
+    BT
+    0 Tr
+    /f1 7.0 Tf
+    1 0 0 1 100 ${YPosition} Tm
+    (${detail}) Tj
+    ET
+  `
 }
 
 const getFieldIds = (acroForm: string) => {

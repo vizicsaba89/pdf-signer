@@ -1,0 +1,43 @@
+{
+  "name": "pdf-signer",
+  "version": "1.0.0",
+  "description": "sign pdf documents",
+  "main": "index.js",
+  "dependencies": {
+    "node-forge": "^0.8.2",
+    "png-js": "^0.1.1",
+    "typescript": "^3.7.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "@types/node-forge": "^0.9.1",
+    "jest": "^24.8.0",
+    "ts-jest": "^24.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vizicsaba89/pdf-signer.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vizicsaba89/pdf-signer/issues"
+  },
+  "homepage": "https://github.com/vizicsaba89/pdf-signer#readme",
+  "jest": {
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "rootDir": "src",
+    "testRegex": ".spec.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  }
+}

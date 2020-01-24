@@ -1,11 +1,13 @@
 import { getImage } from '../image/appender'
+import { AnnotationAppearanceOptions } from '../model/annotation-appearance-options'
+import { CoordinateData } from '../model/coordinate-data'
+import { ImageDetails } from '../model/image-details'
 import { PdfKitMock } from '../model/pdf-kit-mock'
+import { SignatureDetails } from '../model/signature-details'
 import { SignatureOptions } from '../model/signature-options'
+import { XObject } from '../model/x-object'
 import { DEFAULT_BYTE_RANGE_PLACEHOLDER, DEFAULT_SIGNATURE_LENGTH } from './const'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
-import { CoordinateData } from '../model/coordinate-data'
-import { SignatureDetails } from '../model/signature-details'
-import { AnnotationAppearanceOptions } from '../model/annotation-appearance-options'
 
 const specialCharacters = [
   'á',
@@ -53,7 +55,12 @@ const pdfkitAddPlaceholder = ({
   const FONT = getFont(pdf, 'Helvetica')
   const ZAF = getFont(pdf, 'ZapfDingbats')
   const APFONT = getFont(pdf, 'Helvetica')
-  const IMG = getImage(signatureOptions.annotationAppearanceOptions.imageDetails.imagePath, pdf)
+
+  const hasImg = signatureOptions.annotationAppearanceOptions?.imageDetails?.imagePath
+
+  const IMG = hasImg
+    ? getImage((signatureOptions.annotationAppearanceOptions as any).imageDetails.imagePath, pdf)
+    : undefined
 
   const AP = getAnnotationApparance(pdf, IMG, APFONT, signatureOptions)
   const SIGNATURE = getSignature(
@@ -129,42 +136,64 @@ const getWidget = (
 
 const getAnnotationApparance = (
   pdf: PdfKitMock,
-  IMG: any,
+  IMG: any | undefined,
   APFONT: PDFKitReferenceMock,
   signatureOptions: SignatureOptions,
 ) => {
-  return pdf.ref(
-    {
-      CropBox: [0, 0, 197, 70],
-      Type: 'XObject',
-      FormType: 1,
-      BBox: [-10, 10, 197.0, 70.0],
+  let xObject: XObject = {
+    CropBox: [0, 0, 197, 70],
+    Type: 'XObject',
+    FormType: 1,
+    BBox: [-10, 10, 197.0, 70.0],
+    MediaBox: [0, 0, 197, 70],
+    Subtype: 'Form',
+  }
+
+  if (IMG != null) {
+    xObject = {
+      ...xObject,
       Resources: `<</XObject <<\n/Img${IMG.index} ${IMG.index} 0 R\n>>\n/Font <<\n/f1 ${APFONT.index} 0 R\n>>\n>>`,
-      MediaBox: [0, 0, 197, 70],
-      Subtype: 'Form',
-    },
+    }
+  }
+
+  return pdf.ref(
+    xObject,
     undefined,
-    getStream(signatureOptions.annotationAppearanceOptions, IMG.index),
+    getStream(signatureOptions.annotationAppearanceOptions, IMG != null ? IMG.index : undefined),
   )
 }
 
-const getStream = (annotationAppearanceOptions: AnnotationAppearanceOptions, imgIndex: number) => {
-  const generatedContent = generateSignatureContents(
-    annotationAppearanceOptions.signatureDetails,
-  )
-  const { rotate, space, stretch, tilt, xPos, yPos } = annotationAppearanceOptions.imageDetails.transformOptions;
+const getStream = (
+  annotationAppearanceOptions: AnnotationAppearanceOptions,
+  imgIndex: number | undefined,
+) => {
+  const generatedContent = generateSignatureContents(annotationAppearanceOptions.signatureDetails)
+
+  let generatedImage = ''
+
+  if (imgIndex != null) {
+    generatedImage = generateImage((annotationAppearanceOptions as any).imageDetails, imgIndex)
+  }
 
   return getConvertedText(`
     1.0 1.0 1.0 rg
     0.0 0.0 0.0 RG
     q
+    ${generatedImage}
+    0 0 0 rg
+    ${generatedContent}
+    Q`)
+}
+
+const generateImage = (imageDetails: ImageDetails, imgIndex: number) => {
+  const { rotate, space, stretch, tilt, xPos, yPos } = imageDetails.transformOptions
+
+  return `
     q
     ${space} ${rotate} ${tilt} ${stretch} ${xPos} ${yPos} cm
     /Img${imgIndex} Do
     Q
-    0 0 0 rg
-    ${generatedContent}
-    Q`)
+  `
 }
 
 const generateSignatureContents = (details: SignatureDetails[]) => {
@@ -173,7 +202,7 @@ const generateSignatureContents = (details: SignatureDetails[]) => {
     return detailAsPdfContent
   })
 
-  return detailsAsPdfContent.join()
+  return detailsAsPdfContent.join('')
 }
 
 const generateSignatureContent = (detail: SignatureDetails) => {

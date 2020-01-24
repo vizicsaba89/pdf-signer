@@ -3,6 +3,9 @@ import { PdfKitMock } from '../model/pdf-kit-mock'
 import { SignatureOptions } from '../model/signature-options'
 import { DEFAULT_BYTE_RANGE_PLACEHOLDER, DEFAULT_SIGNATURE_LENGTH } from './const'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
+import { CoordinateData } from '../model/coordinate-data'
+import { SignatureDetails } from '../model/signature-details'
+import { AnnotationAppearanceOptions } from '../model/annotation-appearance-options'
 
 const specialCharacters = [
   'á',
@@ -50,7 +53,7 @@ const pdfkitAddPlaceholder = ({
   const FONT = getFont(pdf, 'Helvetica')
   const ZAF = getFont(pdf, 'ZapfDingbats')
   const APFONT = getFont(pdf, 'Helvetica')
-  const IMG = getImage(signatureOptions.annotationAppearanceOptions.imagePath, pdf)
+  const IMG = getImage(signatureOptions.annotationAppearanceOptions.imageDetails.imagePath, pdf)
 
   const AP = getAnnotationApparance(pdf, IMG, APFONT, signatureOptions)
   const SIGNATURE = getSignature(
@@ -60,7 +63,13 @@ const pdfkitAddPlaceholder = ({
     signatureOptions.reason,
     signatureOptions,
   )
-  const WIDGET = getWidget(pdf, fieldIds, SIGNATURE, AP)
+  const WIDGET = getWidget(
+    pdf,
+    fieldIds,
+    SIGNATURE,
+    AP,
+    signatureOptions.annotationAppearanceOptions.signatureCoordinates,
+  )
 
   const ACROFORM = getAcroform(pdf, fieldIds, WIDGET, FONT, ZAF, acroFormId)
 
@@ -95,17 +104,20 @@ const getWidget = (
   fieldIds: PDFKitReferenceMock[],
   signature: PDFKitReferenceMock,
   AP: PDFKitReferenceMock,
+  signatureCoordinates: CoordinateData,
 ) => {
   const signatureBaseName = 'Signature'
-
-  const signatureLeftOffset = fieldIds.length * 125
-  const signatureBottomOffset = 5
 
   return pdf.ref({
     Type: 'Annot',
     Subtype: 'Widget',
     FT: 'Sig',
-    Rect: [signatureLeftOffset, 0, signatureLeftOffset + 90, signatureBottomOffset + 60],
+    Rect: [
+      signatureCoordinates.left,
+      signatureCoordinates.bottom,
+      signatureCoordinates.right,
+      signatureCoordinates.top,
+    ],
     V: signature,
     T: new String(signatureBaseName + (fieldIds.length + 1)), // eslint-disable-line no-new-wrappers
     F: 4,
@@ -132,21 +144,22 @@ const getAnnotationApparance = (
       Subtype: 'Form',
     },
     undefined,
-    getStream(signatureOptions, IMG.index),
+    getStream(signatureOptions.annotationAppearanceOptions, IMG.index),
   )
 }
 
-const getStream = (signatureOptions: SignatureOptions, imgIndex: number) => {
+const getStream = (annotationAppearanceOptions: AnnotationAppearanceOptions, imgIndex: number) => {
   const generatedContent = generateSignatureContents(
-    signatureOptions.annotationAppearanceOptions.signatureDetails,
+    annotationAppearanceOptions.signatureDetails,
   )
+  const { rotate, space, stretch, tilt, xPos, yPos } = annotationAppearanceOptions.imageDetails.transformOptions;
 
   return getConvertedText(`
     1.0 1.0 1.0 rg
     0.0 0.0 0.0 RG
     q
     q
-    200 0 0 50 0 10 cm
+    ${space} ${rotate} ${tilt} ${stretch} ${xPos} ${yPos} cm
     /Img${imgIndex} Do
     Q
     0 0 0 rg
@@ -154,25 +167,24 @@ const getStream = (signatureOptions: SignatureOptions, imgIndex: number) => {
     Q`)
 }
 
-const generateSignatureContents = (details: string[]) => {
-  const starterPosition = 20
-  const YOffset = 9
-
+const generateSignatureContents = (details: SignatureDetails[]) => {
   const detailsAsPdfContent = details.map((detail, index) => {
-    const detailAsPdfContent = generateSignatureContent(detail, index * YOffset + starterPosition)
+    const detailAsPdfContent = generateSignatureContent(detail)
     return detailAsPdfContent
   })
 
   return detailsAsPdfContent.join()
 }
 
-const generateSignatureContent = (detail: string, YPosition: number) => {
+const generateSignatureContent = (detail: SignatureDetails) => {
+  const { rotate, space, tilt, xPos, yPos } = detail.transformOptions
+
   return `
     BT
     0 Tr
-    /f1 7.0 Tf
-    1 0 0 1 100 ${YPosition} Tm
-    (${detail}) Tj
+    /f1 ${detail.fontSize} Tf
+    ${space} ${rotate} ${tilt} 1 ${xPos} ${yPos} Tm
+    (${detail.value}) Tj
     ET
   `
 }
@@ -216,7 +228,7 @@ const getSignature = (
   byteRangePlaceholder: string,
   signatureLength: number,
   reason: string,
-  userInformation: any,
+  signatureDetails: SignatureOptions,
 ) => {
   return pdf.ref({
     Type: 'Sig',
@@ -226,9 +238,9 @@ const getSignature = (
     Contents: Buffer.from(String.fromCharCode(0).repeat(signatureLength)),
     Reason: new String(reason),
     M: new Date(),
-    ContactInfo: new String(`${userInformation.emailAddress}`),
-    Name: new String(`${userInformation.commonName}`),
-    Location: new String('Hungary, HU'),
+    ContactInfo: new String(`${signatureDetails.email}`),
+    Name: new String(`${signatureDetails.signerName}`),
+    Location: new String(`${signatureDetails.location}`),
   })
 }
 

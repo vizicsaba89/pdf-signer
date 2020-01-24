@@ -3,6 +3,7 @@ import { PdfKitMock } from '../model/pdf-kit-mock'
 import { UserInformation } from '../model/user-information'
 import { DEFAULT_BYTE_RANGE_PLACEHOLDER, DEFAULT_SIGNATURE_LENGTH } from './const'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
+import { SignatureOptions } from '../model/signature-options'
 
 const specialCharacters = [
   'á',
@@ -26,17 +27,15 @@ const specialCharacters = [
 const pdfkitAddPlaceholder = ({
   pdf,
   pdfBuffer,
-  reason,
   signatureLength = DEFAULT_SIGNATURE_LENGTH,
   byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
-  userInformation,
+  signatureOptions,
 }: {
   pdf: PdfKitMock
   pdfBuffer: Buffer
-  reason: string
-  userInformation: UserInformation
   signatureLength?: number
-  byteRangePlaceholder?: string
+  byteRangePlaceholder?: string,
+  signatureOptions: SignatureOptions,
 }) => {
   const acroFormPosition = pdfBuffer.lastIndexOf('/Type /AcroForm')
   const isAcroFormExists = acroFormPosition !== -1
@@ -52,15 +51,15 @@ const pdfkitAddPlaceholder = ({
   const FONT = getFont(pdf, 'Helvetica')
   const ZAF = getFont(pdf, 'ZapfDingbats')
   const APFONT = getFont(pdf, 'Helvetica')
-  const IMG = getImage(userInformation.imagePath, pdf)
+  const IMG = getImage(signatureOptions.annotationAppearanceOptions.imagePath, pdf)
 
-  const AP = getAnnotationApparance(pdf, IMG, APFONT, userInformation)
+  const AP = getAnnotationApparance(pdf, IMG, APFONT, signatureOptions)
   const SIGNATURE = getSignature(
     pdf,
     byteRangePlaceholder,
     signatureLength,
-    reason,
-    userInformation,
+    signatureOptions.reason,
+    signatureOptions,
   )
   const WIDGET = getWidget(pdf, fieldIds, SIGNATURE, AP)
 
@@ -121,7 +120,7 @@ const getAnnotationApparance = (
   pdf: PdfKitMock,
   IMG: any,
   APFONT: PDFKitReferenceMock,
-  userInformation: UserInformation,
+  signatureOptions: SignatureOptions,
 ) => {
   return pdf.ref(
     {
@@ -134,11 +133,11 @@ const getAnnotationApparance = (
       Subtype: 'Form',
     },
     undefined,
-    getStream(userInformation, IMG.index),
+    getStream(signatureOptions, IMG.index),
   )
 }
 
-const getStream = (userInformation: UserInformation, imgIndex: number) => {
+const getStream = (signatureOptions: SignatureOptions, imgIndex: number) => {
   return getConvertedText(`
     1.0 1.0 1.0 rg
     0.0 0.0 0.0 RG
@@ -152,7 +151,7 @@ const getStream = (userInformation: UserInformation, imgIndex: number) => {
     0 Tr
     /f1 10.0 Tf
     1.4 0 0 1 20 45.97412 Tm
-    (Aláírta: ${userInformation.commonName}) Tj
+    (Aláírta: ${signatureOptions}) Tj
     ET
     BT
     0 Tr

@@ -1,4 +1,3 @@
-import { UserInformation } from '../model/user-information'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
 import createBufferPageWithAnnotation from './create-buffer-page-with-annotation'
 import createBufferRootWithAcroform from './create-buffer-root-with-acrofrom'
@@ -10,11 +9,12 @@ import PDFKitReferenceMock from './pdf-kit-reference-mock'
 import { PDFObject } from './pdfkit/pdfobject'
 import readPdf from './read-pdf'
 import removeTrailingNewLine from './remove-trailing-new-line'
+import { SignatureOptions } from '../model/signature-options'
 
 const plainAddPlaceholder = (
   pdfBuffer: Buffer,
-  userInformation: UserInformation,
-  { reason, signatureLength = DEFAULT_SIGNATURE_LENGTH }: { reason: any; signatureLength: number },
+  signatureOptions: SignatureOptions,
+  signatureLength: number = DEFAULT_SIGNATURE_LENGTH,
 ) => {
   let pdf = removeTrailingNewLine(pdfBuffer)
   const info = readPdf(pdf)
@@ -49,9 +49,8 @@ const plainAddPlaceholder = (
   const { form, widget } = pdfkitAddPlaceholder({
     pdf: pdfKitMock,
     pdfBuffer,
-    reason,
     signatureLength,
-    userInformation,
+    signatureOptions,
   })
 
   if (!isContainBufferRootWithAcrofrom(pdfBuffer)) {

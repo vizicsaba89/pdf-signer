@@ -6,7 +6,14 @@ describe('some tests', () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     const pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
 
-    const signedPdf = sign(pdfBuffer, p12Buffer, 'pdfsigner')
+    const signedPdf = sign(
+      pdfBuffer,
+      p12Buffer,
+      'pdfsigner',
+      {
+        reason: '2',
+        annotationAppearanceOptions: { imagePath: './assets/certification.jpg', signatureDetails: ['Aláírta: Kiss Béla', 'Dátum: 2019-10-11'] },
+      })
 
     fs.writeFileSync('./assets/signed.pdf', signedPdf)
   })

@@ -140,6 +140,13 @@ const getAnnotationApparance = (
   APFONT: PDFKitReferenceMock,
   signatureOptions: SignatureOptions,
 ) => {
+
+  let resources = `<</Font <<\n/f1 ${APFONT.index} 0 R\n>>>>`
+
+  if (IMG != null) {
+    resources = `<</XObject <<\n/Img${IMG.index} ${IMG.index} 0 R\n>>\n/Font <<\n/f1 ${APFONT.index} 0 R\n>>\n>>`
+  }
+
   let xObject: XObject = {
     CropBox: [0, 0, 197, 70],
     Type: 'XObject',
@@ -147,13 +154,7 @@ const getAnnotationApparance = (
     BBox: [-10, 10, 197.0, 70.0],
     MediaBox: [0, 0, 197, 70],
     Subtype: 'Form',
-  }
-
-  if (IMG != null) {
-    xObject = {
-      ...xObject,
-      Resources: `<</XObject <<\n/Img${IMG.index} ${IMG.index} 0 R\n>>\n/Font <<\n/f1 ${APFONT.index} 0 R\n>>\n>>`,
-    }
+    Resources: resources,
   }
 
   return pdf.ref(

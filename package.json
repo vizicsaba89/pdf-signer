@@ -1,7 +1,7 @@
 {
   "name": "pdf-signer",
-  "version": "0.0.2",
-  "description": "sign pdf documents",
+  "version": "1.0.0",
+  "description": "A JavaScript PDF signer for node.",
   "main": "dist/sign.js",
   "dependencies": {
     "node-forge": "^0.8.2",
@@ -24,6 +24,13 @@
   },
   "author": "",
   "license": "MIT",
+  "keywords": [
+      "sign",
+      "pdf",
+      "esign",
+      "adobe",
+      "digital signature"
+  ],
   "bugs": {
     "url": "https://github.com/vizicsaba89/pdf-signer/issues"
   },

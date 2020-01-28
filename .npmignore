@@ -1,0 +1,9 @@
+assets/
+src/
+.gitignore
+.prettierrc.json
+LICENSE
+package-lock.json
+package.json
+tsconfig.json
+tslint.json

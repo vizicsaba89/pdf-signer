@@ -36,6 +36,11 @@
   },
   "homepage": "https://github.com/vizicsaba89/pdf-signer#readme",
   "jest": {
+    "globals": {
+      "ts-jest": {
+        "diagnostics": false
+      }
+    },
     "moduleFileExtensions": [
       "ts",
       "tsx",

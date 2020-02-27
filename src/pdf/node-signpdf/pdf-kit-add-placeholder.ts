@@ -28,7 +28,7 @@ const specialCharacters = [
   'Ű',
 ]
 
-const pdfkitAddPlaceholder = ({
+const pdfkitAddPlaceholder = async ({
   pdf,
   pdfBuffer,
   signatureLength = DEFAULT_SIGNATURE_LENGTH,
@@ -59,7 +59,10 @@ const pdfkitAddPlaceholder = ({
   const hasImg = signatureOptions.annotationAppearanceOptions?.imageDetails?.imagePath
 
   const IMG = hasImg
-    ? getImage((signatureOptions.annotationAppearanceOptions as any).imageDetails.imagePath, pdf)
+    ? await getImage(
+        (signatureOptions.annotationAppearanceOptions as any).imageDetails.imagePath,
+        pdf,
+      )
     : undefined
 
   const AP = getAnnotationApparance(pdf, IMG, APFONT, signatureOptions)
@@ -140,7 +143,6 @@ const getAnnotationApparance = (
   APFONT: PDFKitReferenceMock,
   signatureOptions: SignatureOptions,
 ) => {
-
   let resources = `<</Font <<\n/f1 ${APFONT.index} 0 R\n>>>>`
 
   if (IMG != null) {

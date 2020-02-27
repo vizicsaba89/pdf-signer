@@ -77,7 +77,7 @@ export class PDFObject {
         let val = object[key]
         let checkedValue = ''
 
-        if (val.toString().indexOf('<<') !== -1) {
+        if (val != null && val.toString().indexOf('<<') !== -1) {
           checkedValue = val
         } else {
           checkedValue = PDFObject.convert(val, encryptFunction)

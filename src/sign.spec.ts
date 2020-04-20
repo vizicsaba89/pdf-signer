@@ -74,7 +74,7 @@ describe('some tests', () => {
         location: 'Location, LO',
         signerName: 'Test User',
         annotationAppearanceOptions: {
-          signatureCoordinates: { left: 0, bottom: 700, right: 190, top: 860 },
+          signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
           signatureDetails: [
             {
               value: 'Signed by: Kiss Béla',

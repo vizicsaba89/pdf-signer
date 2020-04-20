@@ -18,7 +18,7 @@ const plainAddPlaceholder = async (
 ) => {
   let pdf = removeTrailingNewLine(pdfBuffer)
   const info = readPdf(pdf)
-  const pageRef = getPageRef(pdf, info)
+  const pageRef = getPageRef(pdf, info, signatureOptions.shouldAnnotationAppearOnFirstPage)
   const pageIndex = getIndexFromRef(info.xref, pageRef)
   const addedReferences = new Map()
 

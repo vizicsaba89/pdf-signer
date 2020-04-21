@@ -1,3 +1,4 @@
+import { SignatureOptions } from '../model/signature-options'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
 import createBufferPageWithAnnotation from './create-buffer-page-with-annotation'
 import createBufferRootWithAcroform from './create-buffer-root-with-acrofrom'
@@ -9,16 +10,15 @@ import PDFKitReferenceMock from './pdf-kit-reference-mock'
 import { PDFObject } from './pdfkit/pdfobject'
 import readPdf from './read-pdf'
 import removeTrailingNewLine from './remove-trailing-new-line'
-import { SignatureOptions } from '../model/signature-options'
 
-const plainAddPlaceholder = (
+const plainAddPlaceholder = async (
   pdfBuffer: Buffer,
   signatureOptions: SignatureOptions,
   signatureLength: number = DEFAULT_SIGNATURE_LENGTH,
 ) => {
   let pdf = removeTrailingNewLine(pdfBuffer)
   const info = readPdf(pdf)
-  const pageRef = getPageRef(pdf, info)
+  const pageRef = getPageRef(pdf, info, signatureOptions.shouldAnnotationAppearOnFirstPage)
   const pageIndex = getIndexFromRef(info.xref, pageRef)
   const addedReferences = new Map()
 
@@ -46,7 +46,7 @@ const plainAddPlaceholder = (
     },
   }
 
-  const { form, widget } = pdfkitAddPlaceholder({
+  const { form, widget } = await pdfkitAddPlaceholder({
     pdf: pdfKitMock,
     pdfBuffer,
     signatureLength,

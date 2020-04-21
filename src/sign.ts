@@ -3,8 +3,8 @@ import { addSignatureToPdf, replaceByteRangeInPdf } from './pdf/node-signpdf/sig
 import { getSignature } from './signature/digital-signature.service'
 import { SignatureOptions } from './pdf/model/signature-options'
 
-export const sign = (pdf: Buffer, certBuffer: Buffer, certPassword: any, signatureOptions: SignatureOptions) => {
-  const pdfWithPlaceholder: Buffer = plainAddPlaceholder(
+export const sign = async (pdf: Buffer, certBuffer: Buffer, certPassword: any, signatureOptions: SignatureOptions) => {
+  const pdfWithPlaceholder: Buffer = await plainAddPlaceholder(
     pdf,
     signatureOptions,
   )

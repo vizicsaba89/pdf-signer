@@ -6,6 +6,7 @@
   "dependencies": {
     "node-forge": "^0.8.2",
     "png-js": "^0.1.1",
+    "rimraf": "^3.0.2",
     "typescript": "^3.7.2"
   },
   "devDependencies": {
@@ -16,8 +17,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "publish": "npm version patch && tsc"
+    "build": "rimraf dist && tsc",
+    "publish:patch": "npm version patch && npm run build && npm publish",
+    "publish:major": "npm version major && npm run build && npm publish",
+    "publish:minor": "npm version minor && npm run build && npm publish"
   },
   "repository": {
     "type": "git",

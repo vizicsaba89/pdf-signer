@@ -2,7 +2,7 @@ import fs from 'fs'
 import { sign } from './sign'
 
 describe('some tests', () => {
-  it('one sign without picture', async () => {
+it('one signature without image', async () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     const pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
 
@@ -31,7 +31,7 @@ describe('some tests', () => {
     fs.writeFileSync('./assets/results/signed.pdf', signedPdf)
   })
 
-  it('one sign with picture', async () => {
+it('one signature with jpg image', async () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     const pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
 
@@ -64,40 +64,73 @@ describe('some tests', () => {
     fs.writeFileSync('./assets/results/signed-with-image.pdf', signedPdf)
   })
 
-  it('one sign with picture multi page pdf', async () => {
-      const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
-      const pdfBuffer = fs.readFileSync(`./assets/example2.pdf`)
+it('one signature with jpg image and multi page pdf', async () => {
+    const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
+    const pdfBuffer = fs.readFileSync(`./assets/example2.pdf`)
 
-      const signedPdf = await sign(pdfBuffer, p12Buffer, 'pdfsigner', {
-        reason: '2',
-        email: 'test@email.com',
-        location: 'Location, LO',
-        signerName: 'Test User',
-        annotationAppearanceOptions: {
-          signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
-          signatureDetails: [
-            {
-              value: 'Signed by: Kiss Béla',
-              fontSize: 7,
-              transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 20 },
-            },
-            {
-              value: 'Date: 2019-10-11',
-              fontSize: 7,
-              transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 30 },
-            },
-          ],
-          imageDetails: {
-            imagePath: './assets/certification.jpg',
-            transformOptions: { rotate: 0, space: 200, stretch: 50, tilt: 0, xPos: 0, yPos: 10 },
+    const signedPdf = await sign(pdfBuffer, p12Buffer, 'pdfsigner', {
+      reason: '2',
+      email: 'test@email.com',
+      location: 'Location, LO',
+      signerName: 'Test User',
+      annotationAppearanceOptions: {
+        signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
+        signatureDetails: [
+          {
+            value: 'Signed by: Kiss Béla',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 20 },
           },
+          {
+            value: 'Date: 2019-10-11',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 30 },
+          },
+        ],
+        imageDetails: {
+          imagePath: './assets/certification.jpg',
+          transformOptions: { rotate: 0, space: 200, stretch: 50, tilt: 0, xPos: 0, yPos: 10 },
         },
-      })
-
-      fs.writeFileSync('./assets/results/signed-with-image-multi-page.pdf', signedPdf)
+      },
     })
 
-  it('sign once -> save -> sign again', async () => {
+    fs.writeFileSync('./assets/results/signed-with-image-multi-page.pdf', signedPdf)
+  })
+
+it('one signature with jpg image and multi page pdf created from ms word', async () => {
+    const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
+    const pdfBuffer = fs.readFileSync(`./assets/example3.pdf`)
+
+    const signedPdf = await sign(pdfBuffer, p12Buffer, 'pdfsigner', {
+      reason: '2',
+      email: 'test@email.com',
+      location: 'Location, LO',
+      signerName: 'Test User',
+      annotationAppearanceOptions: {
+        signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
+        signatureDetails: [
+          {
+            value: 'Signed by: Kiss Béla',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 20 },
+          },
+          {
+            value: 'Date: 2019-10-11',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 30 },
+          },
+        ],
+        imageDetails: {
+          imagePath: './assets/certification.jpg',
+          transformOptions: { rotate: 0, space: 200, stretch: 50, tilt: 0, xPos: 0, yPos: 10 },
+        },
+      },
+    })
+
+    fs.writeFileSync('./assets/results/signed-with-image-multi-page-created-from-ms-word.pdf', signedPdf)
+  })
+
+it('multiple signature with jpg image', async () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     let pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
 
@@ -160,7 +193,7 @@ describe('some tests', () => {
     fs.writeFileSync('./assets/results/signed-twice.pdf', signedPdfSecondly)
   })
 
-  it('one sign with transparent png', async () => {
+it('one signature with transparent png image', async () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     const pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
 

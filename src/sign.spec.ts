@@ -97,7 +97,7 @@ it('one signature with jpg image and multi page pdf', async () => {
     fs.writeFileSync('./assets/results/signed-with-image-multi-page.pdf', signedPdf)
   })
 
-it('one signature with jpg image and multi page pdf created from ms word', async () => {
+it('one signature on last page with jpg image and multi page pdf created from ms word', async () => {
     const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
     const pdfBuffer = fs.readFileSync(`./assets/example3.pdf`)
 
@@ -127,7 +127,41 @@ it('one signature with jpg image and multi page pdf created from ms word', async
       },
     })
 
-    fs.writeFileSync('./assets/results/signed-with-image-multi-page-created-from-ms-word.pdf', signedPdf)
+    fs.writeFileSync('./assets/results/signed-on-last-page-with-image-multi-page-created-from-ms-word.pdf', signedPdf)
+  })
+
+  it('one signature on first page with jpg image and multi page pdf created from ms word', async () => {
+    const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
+    const pdfBuffer = fs.readFileSync(`./assets/example3.pdf`)
+
+    const signedPdf = await sign(pdfBuffer, p12Buffer, 'pdfsigner', {
+      reason: '2',
+      email: 'test@email.com',
+      location: 'Location, LO',
+      signerName: 'Test User',
+      shouldAnnotationAppearOnFirstPage: true,
+      annotationAppearanceOptions: {
+        signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
+        signatureDetails: [
+          {
+            value: 'Signed by: Kiss Béla',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 20 },
+          },
+          {
+            value: 'Date: 2019-10-11',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 30 },
+          },
+        ],
+        imageDetails: {
+          imagePath: './assets/certification.jpg',
+          transformOptions: { rotate: 0, space: 200, stretch: 50, tilt: 0, xPos: 0, yPos: 10 },
+        },
+      },
+    })
+
+    fs.writeFileSync('./assets/results/signed-on-first-page-with-image-multi-page-created-from-ms-word.pdf', signedPdf)
   })
 
 it('multiple signature with jpg image', async () => {

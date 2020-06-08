@@ -1,4 +1,5 @@
 import { SignatureOptions } from '../model/signature-options'
+import { convertObject } from '../pdf-object-converter/pdf-object'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
 import createBufferPageWithAnnotation from './create-buffer-page-with-annotation'
 import createBufferRootWithAcroform from './create-buffer-root-with-acrofrom'
@@ -7,7 +8,6 @@ import getIndexFromRef from './get-index-from-ref'
 import getPageRef from './get-page-ref'
 import pdfkitAddPlaceholder from './pdf-kit-add-placeholder'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
-import { PDFObject } from './pdfkit/pdfobject'
 import readPdf from './read-pdf'
 import removeTrailingNewLine from './remove-trailing-new-line'
 
@@ -78,7 +78,7 @@ const getAssembledPdf = (pdf: any, index: any, input: any, stream: any): Buffer 
     finalPdf,
     Buffer.from('\n'),
     Buffer.from(`${index} 0 obj\n`),
-    Buffer.from(PDFObject.convert(input)),
+    Buffer.from(convertObject(input)),
   ])
 
   if (stream) {

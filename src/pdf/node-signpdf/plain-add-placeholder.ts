@@ -1,112 +1,8 @@
 import { SignatureOptions } from '../model/signature-options'
-import { convertObject } from '../pdf-object-converter/pdf-object'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
-import createBufferPageWithAnnotation from './create-buffer-page-with-annotation'
-import createBufferRootWithAcroform from './create-buffer-root-with-acrofrom'
-import createBufferTrailer from './create-buffer-trailer'
-import getIndexFromRef from './get-index-from-ref'
-import getPageRef from './get-page-ref'
-import pdfkitAddPlaceholder from './pdf-kit-add-placeholder'
+import { PdfCreator } from './pdf-creator'
+import { appendAcroform, appendImage, appendWidget } from './pdf-kit-add-placeholder'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
-import readPdf from './read-pdf'
-import removeTrailingNewLine from './remove-trailing-new-line'
-
-class PdfCreator {
-  pdf: any
-  originalPdf: any
-  maxIndex: any
-  signatureOnPage: any
-  addedReferences = new Map()
-
-  constructor(originalPdf: Buffer) {
-    this.pdf = removeTrailingNewLine(originalPdf)
-
-    const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, true)
-    const pageIndex = getIndexFromRef(info.xref, pageRef)
-
-    this.originalPdf = originalPdf
-
-    this.maxIndex = info.xref.maxIndex
-    this.signatureOnPage = new PDFKitReferenceMock(pageIndex, {
-      data: {
-        Annots: [],
-      },
-    })
-  }
-
-  ref(pdfElement: any, additionalIndex: number | undefined, stream: any) {
-    this.maxIndex += 1
-
-    const index = additionalIndex != null ? additionalIndex : this.maxIndex
-
-    this.addedReferences.set(index, this.pdf.length + 1)
-
-    this.pdf = this.getAssembledPdf(this.pdf, index, pdfElement, stream)
-
-    return new PDFKitReferenceMock(this.maxIndex)
-  }
-
-  close(form: any, widget: any) {
-    const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, true)
-    const pageIndex = getIndexFromRef(info.xref, pageRef)
-
-    if (!this.isContainBufferRootWithAcrofrom(this.originalPdf)) {
-      const rootIndex = getIndexFromRef(info.xref, info.rootRef)
-      this.addedReferences.set(rootIndex, this.pdf.length + 1)
-      this.pdf = Buffer.concat([
-        this.pdf,
-        Buffer.from('\n'),
-        createBufferRootWithAcroform(info, form),
-      ])
-    }
-
-    this.addedReferences.set(pageIndex, this.pdf.length + 1)
-    this.pdf = Buffer.concat([
-      this.pdf,
-      Buffer.from('\n'),
-      createBufferPageWithAnnotation(this.pdf, info, pageRef, widget),
-    ])
-
-    this.pdf = Buffer.concat([
-      this.pdf,
-      Buffer.from('\n'),
-      createBufferTrailer(this.pdf, info, this.addedReferences),
-    ])
-  }
-
-  private getAssembledPdf(pdf: any, index: any, input: any, stream: any): Buffer {
-    let finalPdf = pdf
-
-    finalPdf = Buffer.concat([
-      finalPdf,
-      Buffer.from('\n'),
-      Buffer.from(`${index} 0 obj\n`),
-      Buffer.from(convertObject(input)),
-    ])
-
-    if (stream) {
-      finalPdf = Buffer.concat([
-        finalPdf,
-        Buffer.from('\nstream\n'),
-        Buffer.from(stream),
-        Buffer.from('\nendstream'),
-      ])
-    }
-
-    finalPdf = Buffer.concat([finalPdf, Buffer.from('\nendobj\n')])
-
-    return finalPdf
-  }
-
-  private isContainBufferRootWithAcrofrom(pdf: Buffer) {
-    const bufferRootWithAcroformRefRegex = new RegExp('\\/AcroForm\\s+(\\d+\\s\\d+\\sR)', 'g')
-    const match = bufferRootWithAcroformRefRegex.exec(pdf.toString())
-
-    return match != null && match[1] != null && match[1] !== ''
-  }
-}
 
 const plainAddPlaceholder = async (
   pdfBuffer: Buffer,
@@ -115,16 +11,57 @@ const plainAddPlaceholder = async (
 ) => {
   const pdfAppender = new PdfCreator(pdfBuffer)
 
-  const { form, widget } = await pdfkitAddPlaceholder({
-    pdf: pdfAppender,
-    pdfBuffer,
-    signatureLength,
-    signatureOptions,
-  })
+  const acroFormPosition = pdfAppender.pdf.lastIndexOf('/Type /AcroForm')
+  const isAcroFormExists = acroFormPosition !== -1
+  let acroFormId
+  let fieldIds: PDFKitReferenceMock[] = []
 
-  pdfAppender.close(form, widget)
+  if (isAcroFormExists) {
+    const acroForm = getAcroForm(pdfAppender.pdf, acroFormPosition)
+    acroFormId = getAcroFormId(acroForm)
+    fieldIds = getFieldIds(acroForm)
+  }
+
+  const imageReference = await appendImage(pdfAppender, signatureOptions)
+
+  const widgetReference = appendWidget(
+    pdfAppender,
+    fieldIds,
+    signatureOptions,
+    signatureLength,
+    imageReference,
+  )
+
+  const formReference = appendAcroform(pdfAppender, fieldIds, widgetReference, acroFormId)
+
+  pdfAppender.close(formReference, widgetReference)
 
   return pdfAppender.pdf
+}
+
+const getAcroForm = (pdfBuffer: Buffer, acroFormPosition: number) => {
+  const pdfSlice = pdfBuffer.slice(acroFormPosition - 12)
+  const acroForm = pdfSlice.slice(0, pdfSlice.indexOf('endobj')).toString()
+
+  return acroForm
+}
+
+const getAcroFormId = (acroForm: string) => {
+  const acroFormFirsRow = acroForm.split('\n')[0]
+  const acroFormId = parseInt(acroFormFirsRow.split(' ')[0])
+
+  return acroFormId
+}
+
+const getFieldIds = (acroForm: string) => {
+  let fieldIds: PDFKitReferenceMock[] = []
+  const acroFormFields = acroForm.slice(acroForm.indexOf('/Fields [') + 9, acroForm.indexOf(']'))
+  fieldIds = acroFormFields
+    .split(' ')
+    .filter((_element, index) => index % 3 === 0)
+    .map((fieldId) => new PDFKitReferenceMock(fieldId))
+
+  return fieldIds
 }
 
 export default plainAddPlaceholder

@@ -1,9 +1,9 @@
 import fs from 'fs'
-import { PdfKitMock } from '../model/pdf-kit-mock'
+import { PdfCreator } from '../node-signpdf/pdf-creator'
 import { getJpgImage } from './jpeg-appender'
 import { getPngImage } from './png-appender'
 
-export const getImage = async (imagePath: string, pdf: PdfKitMock) => {
+export const getImage = async (imagePath: string, pdf: PdfCreator) => {
   let img
   const data = fs.readFileSync(imagePath)
 

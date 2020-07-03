@@ -28,19 +28,29 @@ const specialCharacters = [
   'Ű',
 ]
 
+export const appendFont = (pdf: PdfCreator, fontName: string) => {
+  const fontObject = getFont(fontName)
+  const fontReference = pdf.append(fontObject)
+
+  return fontReference
+}
+
 export const appendAcroform = (
   pdf: PdfCreator,
   fieldIds: PDFKitReferenceMock[],
   widgetReferenceList: PDFKitReferenceMock[],
+  fonts: { name: string; ref: PDFKitReferenceMock }[],
   acroFormId?: any,
 ) => {
+  /*
   const fontObject = getFont('Helvetica')
   const fontReference = pdf.append(fontObject)
 
   const zafObject = getFont('ZapfDingbats')
   const zafReference = pdf.append(zafObject)
+*/
 
-  const acroformObject = getAcroform(fieldIds, widgetReferenceList, fontReference, zafReference)
+  const acroformObject = getAcroform(fieldIds, widgetReferenceList, fonts)
   const acroformReference = pdf.append(acroformObject, acroFormId)
 
   return acroformReference
@@ -62,11 +72,9 @@ export const appendImage = async (pdf: PdfCreator, signatureOptions: SignatureOp
 export const appendAnnotationApparance = (
   pdf: PdfCreator,
   signatureOptions: SignatureOptions,
+  apFontReference: PDFKitReferenceMock,
   image?: PDFKitReferenceMock,
 ) => {
-  const apFontObject = getFont('Helvetica')
-  const apFontReference = pdf.append(apFontObject)
-
   const apObject = getAnnotationApparance(image, apFontReference)
   const apReference = pdf.appendStream(
     apObject,
@@ -81,13 +89,13 @@ export const appendAnnotationApparance = (
 
 export const appendWidget = (
   pdf: PdfCreator,
-  fieldIds: PDFKitReferenceMock[],
+  widgetIndex: number,
   signatureOptions: SignatureOptions,
   signatureReference: PDFKitReferenceMock,
   apReference: PDFKitReferenceMock,
 ) => {
   const widgetObject = getWidget(
-    fieldIds,
+    widgetIndex,
     signatureReference,
     apReference,
     signatureOptions.annotationAppearanceOptions.signatureCoordinates,
@@ -118,19 +126,23 @@ export const appendSignature = (
 const getAcroform = (
   fieldIds: PDFKitReferenceMock[],
   WIDGET: PDFKitReferenceMock[],
-  FONT: PDFKitReferenceMock,
-  ZAF: PDFKitReferenceMock,
+  fonts: { name: string; ref: PDFKitReferenceMock }[],
 ) => {
+  const mergedFonts = fonts.reduce(
+    (prev, curr) => prev + `/${curr.name} ${curr.ref.toString()} `,
+    '',
+  )
+
   return {
     Type: 'AcroForm',
     SigFlags: 3,
     Fields: [...fieldIds, new Object(WIDGET.join(','))],
-    DR: `<</Font\n<</Helvetica ${FONT.index} 0 R/ZapfDingbats ${ZAF.index} 0 R>>\n>>`,
+    DR: `<</Font\n<<${mergedFonts.trim()}>>\n>>`,
   }
 }
 
 const getWidget = (
-  fieldIds: PDFKitReferenceMock[],
+  widgetIndex: number,
   signature: PDFKitReferenceMock,
   AP: PDFKitReferenceMock,
   signatureCoordinates: CoordinateData,
@@ -149,7 +161,7 @@ const getWidget = (
       signatureCoordinates.top,
     ],
     V: signature,
-    T: new String(signatureBaseName + (fieldIds.length + 1)), // eslint-disable-line no-new-wrappers
+    T: new String(signatureBaseName + widgetIndex), // eslint-disable-line no-new-wrappers
     F: 4,
     AP: `<</N ${AP.index} 0 R>>`,
     P: pdf.getCurrentWidgetPageReference(), // eslint-disable-line no-underscore-dangle // TODO REPLACE

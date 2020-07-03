@@ -35,7 +35,7 @@ const pdfkitAddPlaceholder = async ({
   byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
   signatureOptions,
 }: {
-  pdf: PdfKitMock
+  pdf: any
   pdfBuffer: Buffer
   signatureLength?: number
   byteRangePlaceholder?: string
@@ -110,7 +110,7 @@ const getAcroform = (
 }
 
 const getWidget = (
-  pdf: PdfKitMock,
+  pdf: any,
   fieldIds: PDFKitReferenceMock[],
   signature: PDFKitReferenceMock,
   AP: PDFKitReferenceMock,
@@ -132,7 +132,7 @@ const getWidget = (
     T: new String(signatureBaseName + (fieldIds.length + 1)), // eslint-disable-line no-new-wrappers
     F: 4,
     AP: `<</N ${AP.index} 0 R>>`,
-    P: pdf.page.dictionary, // eslint-disable-line no-underscore-dangle
+    P: pdf.signatureOnPage, // eslint-disable-line no-underscore-dangle // TODO REPLACE
     DA: new String('/Helvetica 0 Tf 0 g'), // eslint-disable-line no-new-wrappers
   })
 }

@@ -11,95 +11,120 @@ import PDFKitReferenceMock from './pdf-kit-reference-mock'
 import readPdf from './read-pdf'
 import removeTrailingNewLine from './remove-trailing-new-line'
 
+class PdfCreator {
+  pdf: any
+  originalPdf: any
+  maxIndex: any
+  signatureOnPage: any
+  addedReferences = new Map()
+
+  constructor(originalPdf: Buffer) {
+    this.pdf = removeTrailingNewLine(originalPdf)
+
+    const info = readPdf(this.pdf)
+    const pageRef = getPageRef(this.pdf, info, true)
+    const pageIndex = getIndexFromRef(info.xref, pageRef)
+
+    this.originalPdf = originalPdf
+
+    this.maxIndex = info.xref.maxIndex
+    this.signatureOnPage = new PDFKitReferenceMock(pageIndex, {
+      data: {
+        Annots: [],
+      },
+    })
+  }
+
+  ref(pdfElement: any, additionalIndex: number | undefined, stream: any) {
+    this.maxIndex += 1
+
+    const index = additionalIndex != null ? additionalIndex : this.maxIndex
+
+    this.addedReferences.set(index, this.pdf.length + 1)
+
+    this.pdf = this.getAssembledPdf(this.pdf, index, pdfElement, stream)
+
+    return new PDFKitReferenceMock(this.maxIndex)
+  }
+
+  close(form: any, widget: any) {
+    const info = readPdf(this.pdf)
+    const pageRef = getPageRef(this.pdf, info, true)
+    const pageIndex = getIndexFromRef(info.xref, pageRef)
+
+    if (!this.isContainBufferRootWithAcrofrom(this.originalPdf)) {
+      const rootIndex = getIndexFromRef(info.xref, info.rootRef)
+      this.addedReferences.set(rootIndex, this.pdf.length + 1)
+      this.pdf = Buffer.concat([
+        this.pdf,
+        Buffer.from('\n'),
+        createBufferRootWithAcroform(info, form),
+      ])
+    }
+
+    this.addedReferences.set(pageIndex, this.pdf.length + 1)
+    this.pdf = Buffer.concat([
+      this.pdf,
+      Buffer.from('\n'),
+      createBufferPageWithAnnotation(this.pdf, info, pageRef, widget),
+    ])
+
+    this.pdf = Buffer.concat([
+      this.pdf,
+      Buffer.from('\n'),
+      createBufferTrailer(this.pdf, info, this.addedReferences),
+    ])
+  }
+
+  private getAssembledPdf(pdf: any, index: any, input: any, stream: any): Buffer {
+    let finalPdf = pdf
+
+    finalPdf = Buffer.concat([
+      finalPdf,
+      Buffer.from('\n'),
+      Buffer.from(`${index} 0 obj\n`),
+      Buffer.from(convertObject(input)),
+    ])
+
+    if (stream) {
+      finalPdf = Buffer.concat([
+        finalPdf,
+        Buffer.from('\nstream\n'),
+        Buffer.from(stream),
+        Buffer.from('\nendstream'),
+      ])
+    }
+
+    finalPdf = Buffer.concat([finalPdf, Buffer.from('\nendobj\n')])
+
+    return finalPdf
+  }
+
+  private isContainBufferRootWithAcrofrom(pdf: Buffer) {
+    const bufferRootWithAcroformRefRegex = new RegExp('\\/AcroForm\\s+(\\d+\\s\\d+\\sR)', 'g')
+    const match = bufferRootWithAcroformRefRegex.exec(pdf.toString())
+
+    return match != null && match[1] != null && match[1] !== ''
+  }
+}
+
 const plainAddPlaceholder = async (
   pdfBuffer: Buffer,
   signatureOptions: SignatureOptions,
   signatureLength: number = DEFAULT_SIGNATURE_LENGTH,
 ) => {
-  let pdf = removeTrailingNewLine(pdfBuffer)
-  const info = readPdf(pdf)
-  const pageRef = getPageRef(pdf, info, signatureOptions.shouldAnnotationAppearOnFirstPage)
-  const pageIndex = getIndexFromRef(info.xref, pageRef)
-  const addedReferences = new Map()
-
-  const pdfKitMock = {
-    ref: (input: any, additionalIndex: number | undefined, stream: any) => {
-      info.xref.maxIndex += 1
-
-      const index = additionalIndex != null ? additionalIndex : info.xref.maxIndex
-
-      addedReferences.set(index, pdf.length + 1)
-
-      pdf = getAssembledPdf(pdf, index, input, stream)
-
-      return new PDFKitReferenceMock(info.xref.maxIndex)
-    },
-    page: {
-      dictionary: new PDFKitReferenceMock(pageIndex, {
-        data: {
-          Annots: [],
-        },
-      }),
-    },
-    _root: {
-      data: {},
-    },
-  }
+  const pdfAppender = new PdfCreator(pdfBuffer)
 
   const { form, widget } = await pdfkitAddPlaceholder({
-    pdf: pdfKitMock,
+    pdf: pdfAppender,
     pdfBuffer,
     signatureLength,
     signatureOptions,
   })
 
-  if (!isContainBufferRootWithAcrofrom(pdfBuffer)) {
-    const rootIndex = getIndexFromRef(info.xref, info.rootRef)
-    addedReferences.set(rootIndex, pdf.length + 1)
-    pdf = Buffer.concat([pdf, Buffer.from('\n'), createBufferRootWithAcroform(info, form)])
-  }
+  pdfAppender.close(form, widget)
 
-  addedReferences.set(pageIndex, pdf.length + 1)
-  pdf = Buffer.concat([
-    pdf,
-    Buffer.from('\n'),
-    createBufferPageWithAnnotation(pdf, info, pageRef, widget),
-  ])
-
-  pdf = Buffer.concat([pdf, Buffer.from('\n'), createBufferTrailer(pdf, info, addedReferences)])
-
-  return pdf
-}
-
-const getAssembledPdf = (pdf: any, index: any, input: any, stream: any): Buffer => {
-  let finalPdf = pdf
-
-  finalPdf = Buffer.concat([
-    finalPdf,
-    Buffer.from('\n'),
-    Buffer.from(`${index} 0 obj\n`),
-    Buffer.from(convertObject(input)),
-  ])
-
-  if (stream) {
-    finalPdf = Buffer.concat([
-      finalPdf,
-      Buffer.from('\nstream\n'),
-      Buffer.from(stream),
-      Buffer.from('\nendstream'),
-    ])
-  }
-
-  finalPdf = Buffer.concat([finalPdf, Buffer.from('\nendobj\n')])
-
-  return finalPdf
-}
-
-const isContainBufferRootWithAcrofrom = (pdf: Buffer) => {
-  const bufferRootWithAcroformRefRegex = new RegExp('\\/AcroForm\\s+(\\d+\\s\\d+\\sR)', 'g')
-  const match = bufferRootWithAcroformRefRegex.exec(pdf.toString())
-
-  return match != null && match[1] != null && match[1] !== ''
+  return pdfAppender.pdf
 }
 
 export default plainAddPlaceholder

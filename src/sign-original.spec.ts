@@ -106,6 +106,7 @@ describe('some tests', () => {
       email: 'test@email.com',
       location: 'Location, LO',
       signerName: 'Test User',
+      annotationOnPage: 2,
       annotationAppearanceOptions: {
         signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
         signatureDetails: [
@@ -142,7 +143,6 @@ describe('some tests', () => {
       email: 'test@email.com',
       location: 'Location, LO',
       signerName: 'Test User',
-      shouldAnnotationAppearOnFirstPage: true,
       annotationAppearanceOptions: {
         signatureCoordinates: { left: 0, bottom: 200, right: 190, top: 100 },
         signatureDetails: [

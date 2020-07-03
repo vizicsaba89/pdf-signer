@@ -15,11 +15,17 @@ export class PdfCreator {
   signatureOnPage: any
   addedReferences = new Map()
 
-  constructor(originalPdf: Buffer) {
+  annotationOnPage = 0
+
+  constructor(originalPdf: Buffer, annotationOnPage: number | undefined) {
     this.pdf = removeTrailingNewLine(originalPdf)
 
+    if (annotationOnPage) {
+      this.annotationOnPage = annotationOnPage
+    }
+
     const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, true)
+    const pageRef = getPageRef(this.pdf, info, this.annotationOnPage)
     const pageIndex = getIndexFromRef(info.xref, pageRef)
 
     this.originalPdf = originalPdf
@@ -58,7 +64,7 @@ export class PdfCreator {
 
   close(form: any, widget: any) {
     const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, true)
+    const pageRef = getPageRef(this.pdf, info, this.annotationOnPage)
     const pageIndex = getIndexFromRef(info.xref, pageRef)
 
     if (!this.isContainBufferRootWithAcrofrom(this.originalPdf)) {

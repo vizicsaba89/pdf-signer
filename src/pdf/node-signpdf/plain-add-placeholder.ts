@@ -9,7 +9,7 @@ const plainAddPlaceholder = async (
   signatureOptions: SignatureOptions,
   signatureLength: number = DEFAULT_SIGNATURE_LENGTH,
 ) => {
-  const pdfAppender = new PdfCreator(pdfBuffer)
+  const pdfAppender = new PdfCreator(pdfBuffer, signatureOptions.annotationOnPage)
 
   const acroFormPosition = pdfAppender.pdf.lastIndexOf('/Type /AcroForm')
   const isAcroFormExists = acroFormPosition !== -1

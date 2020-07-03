@@ -12,30 +12,49 @@ export class PdfCreator {
   pdf: any
   originalPdf: any
   maxIndex: any
-  signatureOnPage: any
   addedReferences = new Map()
 
-  annotationOnPage = 0
+  annotationOnPages: { pageRef: PDFKitReferenceMock; pageIndex: number }[] = []
+  widgetCounter: number
 
-  constructor(originalPdf: Buffer, annotationOnPage: number | undefined) {
+  constructor(originalPdf: Buffer, annotationOnPages: number[]) {
     this.pdf = removeTrailingNewLine(originalPdf)
+    this.originalPdf = originalPdf
+    this.maxIndex = readPdf(this.pdf).xref.maxIndex
 
-    if (annotationOnPage) {
-      this.annotationOnPage = annotationOnPage
+    if (annotationOnPages == null) {
+      this.initAnnotationInfos(0)
+      this.widgetCounter = 0
+    } else {
+      annotationOnPages.forEach((annotationOnPage) => {
+        this.initAnnotationInfos(annotationOnPage)
+      })
+      this.widgetCounter = annotationOnPages.length - 1
     }
+  }
 
+  initAnnotationInfos(annotationOnPage: number) {
     const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, this.annotationOnPage)
+    const pageRef = getPageRef(this.pdf, info, annotationOnPage)
     const pageIndex = getIndexFromRef(info.xref, pageRef)
 
-    this.originalPdf = originalPdf
-
-    this.maxIndex = info.xref.maxIndex
-    this.signatureOnPage = new PDFKitReferenceMock(pageIndex, {
-      data: {
-        Annots: [],
+    this.annotationOnPages = [
+      ...this.annotationOnPages,
+      {
+        pageIndex: annotationOnPage,
+        pageRef: new PDFKitReferenceMock(pageIndex, {
+          data: {
+            Annots: [],
+          },
+        }),
       },
-    })
+    ]
+  }
+
+  getCurrentWidgetPageReference() {
+    const currentPageReference = this.annotationOnPages[this.widgetCounter]
+    this.widgetCounter -= 1
+    return currentPageReference.pageRef
   }
 
   append(pdfElement: any, additionalIndex?: number | undefined) {
@@ -62,10 +81,8 @@ export class PdfCreator {
     return new PDFKitReferenceMock(this.maxIndex)
   }
 
-  close(form: any, widget: any) {
+  close(form: any, widgetReferenceList: PDFKitReferenceMock[]) {
     const info = readPdf(this.pdf)
-    const pageRef = getPageRef(this.pdf, info, this.annotationOnPage)
-    const pageIndex = getIndexFromRef(info.xref, pageRef)
 
     if (!this.isContainBufferRootWithAcrofrom(this.originalPdf)) {
       const rootIndex = getIndexFromRef(info.xref, info.rootRef)
@@ -77,12 +94,17 @@ export class PdfCreator {
       ])
     }
 
-    this.addedReferences.set(pageIndex, this.pdf.length + 1)
-    this.pdf = Buffer.concat([
-      this.pdf,
-      Buffer.from('\n'),
-      createBufferPageWithAnnotation(this.pdf, info, pageRef, widget),
-    ])
+    this.annotationOnPages.forEach((annotationOnPage, index) => {
+      const { pageRef } = annotationOnPage
+
+      this.addedReferences.set(pageRef.index, this.pdf.length + 1)
+
+      this.pdf = Buffer.concat([
+        this.pdf,
+        Buffer.from('\n'),
+        createBufferPageWithAnnotation(this.pdf, info, pageRef.toString(), widgetReferenceList[index]),
+      ])
+    })
 
     this.pdf = Buffer.concat([
       this.pdf,

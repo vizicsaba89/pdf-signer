@@ -31,7 +31,7 @@ const specialCharacters = [
 export const appendAcroform = (
   pdf: PdfCreator,
   fieldIds: PDFKitReferenceMock[],
-  widgetReference: PDFKitReferenceMock,
+  widgetReferenceList: PDFKitReferenceMock[],
   acroFormId?: any,
 ) => {
   const fontObject = getFont('Helvetica')
@@ -40,7 +40,7 @@ export const appendAcroform = (
   const zafObject = getFont('ZapfDingbats')
   const zafReference = pdf.append(zafObject)
 
-  const acroformObject = getAcroform(fieldIds, widgetReference, fontReference, zafReference)
+  const acroformObject = getAcroform(fieldIds, widgetReferenceList, fontReference, zafReference)
   const acroformReference = pdf.append(acroformObject, acroFormId)
 
   return acroformReference
@@ -59,13 +59,10 @@ export const appendImage = async (pdf: PdfCreator, signatureOptions: SignatureOp
   return IMG
 }
 
-export const appendWidget = (
+export const appendAnnotationApparance = (
   pdf: PdfCreator,
-  fieldIds: PDFKitReferenceMock[],
   signatureOptions: SignatureOptions,
-  signatureLength = DEFAULT_SIGNATURE_LENGTH,
   image?: PDFKitReferenceMock,
-  byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
 ) => {
   const apFontObject = getFont('Helvetica')
   const apFontReference = pdf.append(apFontObject)
@@ -79,14 +76,16 @@ export const appendWidget = (
     ),
   )
 
-  const signatureObject = getSignature(
-    byteRangePlaceholder,
-    signatureLength,
-    signatureOptions.reason,
-    signatureOptions,
-  )
-  const signatureReference = pdf.append(signatureObject)
+  return apReference
+}
 
+export const appendWidget = (
+  pdf: PdfCreator,
+  fieldIds: PDFKitReferenceMock[],
+  signatureOptions: SignatureOptions,
+  signatureReference: PDFKitReferenceMock,
+  apReference: PDFKitReferenceMock,
+) => {
   const widgetObject = getWidget(
     fieldIds,
     signatureReference,
@@ -99,16 +98,33 @@ export const appendWidget = (
   return widgetReference
 }
 
+export const appendSignature = (
+  pdf: PdfCreator,
+  signatureOptions: SignatureOptions,
+  signatureLength = DEFAULT_SIGNATURE_LENGTH,
+  byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
+) => {
+  const signatureObject = getSignature(
+    byteRangePlaceholder,
+    signatureLength,
+    signatureOptions.reason,
+    signatureOptions,
+  )
+  const signatureReference = pdf.append(signatureObject)
+
+  return signatureReference
+}
+
 const getAcroform = (
   fieldIds: PDFKitReferenceMock[],
-  WIDGET: PDFKitReferenceMock,
+  WIDGET: PDFKitReferenceMock[],
   FONT: PDFKitReferenceMock,
   ZAF: PDFKitReferenceMock,
 ) => {
   return {
     Type: 'AcroForm',
     SigFlags: 3,
-    Fields: [...fieldIds, WIDGET],
+    Fields: [...fieldIds, new Object(WIDGET.join(','))],
     DR: `<</Font\n<</Helvetica ${FONT.index} 0 R/ZapfDingbats ${ZAF.index} 0 R>>\n>>`,
   }
 }
@@ -118,7 +134,7 @@ const getWidget = (
   signature: PDFKitReferenceMock,
   AP: PDFKitReferenceMock,
   signatureCoordinates: CoordinateData,
-  pdf: any,
+  pdf: PdfCreator,
 ) => {
   const signatureBaseName = 'Signature'
 
@@ -136,7 +152,7 @@ const getWidget = (
     T: new String(signatureBaseName + (fieldIds.length + 1)), // eslint-disable-line no-new-wrappers
     F: 4,
     AP: `<</N ${AP.index} 0 R>>`,
-    P: pdf.signatureOnPage, // eslint-disable-line no-underscore-dangle // TODO REPLACE
+    P: pdf.getCurrentWidgetPageReference(), // eslint-disable-line no-underscore-dangle // TODO REPLACE
     DA: new String('/Helvetica 0 Tf 0 g'), // eslint-disable-line no-new-wrappers
   }
 }

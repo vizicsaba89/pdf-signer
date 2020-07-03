@@ -1,7 +1,13 @@
 import { SignatureOptions } from '../model/signature-options'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
 import { PdfCreator } from './pdf-creator'
-import { appendAcroform, appendImage, appendWidget } from './pdf-kit-add-placeholder'
+import {
+  appendAcroform,
+  appendImage,
+  appendWidget,
+  appendSignature,
+  appendAnnotationApparance,
+} from './pdf-kit-add-placeholder'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
 
 const plainAddPlaceholder = async (
@@ -9,7 +15,10 @@ const plainAddPlaceholder = async (
   signatureOptions: SignatureOptions,
   signatureLength: number = DEFAULT_SIGNATURE_LENGTH,
 ) => {
-  const pdfAppender = new PdfCreator(pdfBuffer, signatureOptions.annotationOnPage)
+  const annotationOnPages =
+    signatureOptions.annotationOnPages != null ? signatureOptions.annotationOnPages : [0]
+
+  const pdfAppender = new PdfCreator(pdfBuffer, annotationOnPages)
 
   const acroFormPosition = pdfAppender.pdf.lastIndexOf('/Type /AcroForm')
   const isAcroFormExists = acroFormPosition !== -1
@@ -22,19 +31,31 @@ const plainAddPlaceholder = async (
     fieldIds = getFieldIds(acroForm)
   }
 
+  const signatureReference = appendSignature(pdfAppender, signatureOptions, signatureLength)
+
   const imageReference = await appendImage(pdfAppender, signatureOptions)
 
-  const widgetReference = appendWidget(
-    pdfAppender,
-    fieldIds,
-    signatureOptions,
-    signatureLength,
-    imageReference,
-  )
+  const widgetReferenceList = annotationOnPages.map((annotationPage) => {
+    const annotationReference = appendAnnotationApparance(
+      pdfAppender,
+      signatureOptions,
+      imageReference,
+    )
 
-  const formReference = appendAcroform(pdfAppender, fieldIds, widgetReference, acroFormId)
+    const widgetReference = appendWidget(
+      pdfAppender,
+      fieldIds,
+      signatureOptions,
+      signatureReference,
+      annotationReference,
+    )
 
-  pdfAppender.close(formReference, widgetReference)
+    return widgetReference
+  })
+
+  const formReference = appendAcroform(pdfAppender, fieldIds, widgetReferenceList, acroFormId)
+
+  pdfAppender.close(formReference, widgetReferenceList)
 
   return pdfAppender.pdf
 }

@@ -6,7 +6,7 @@ export interface SignatureOptions {
   signerName?: string,
   email?: string,
   location?: string,
-  annotationOnPage?: number,
+  annotationOnPages?: number[],
   annotationAppearanceOptions: AnnotationAppearanceOptions,
 
 }

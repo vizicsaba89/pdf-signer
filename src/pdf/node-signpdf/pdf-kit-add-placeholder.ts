@@ -136,7 +136,7 @@ const getAcroform = (
   return {
     Type: 'AcroForm',
     SigFlags: 3,
-    Fields: [...fieldIds, new Object(WIDGET.join(','))],
+    Fields: [...fieldIds, ...WIDGET],
     DR: `<</Font\n<<${mergedFonts.trim()}>>\n>>`,
   }
 }

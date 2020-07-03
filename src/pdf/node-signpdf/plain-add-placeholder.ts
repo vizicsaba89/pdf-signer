@@ -41,7 +41,7 @@ const plainAddPlaceholder = async (
 
     const widgetReference = appendWidget(
       pdfAppender,
-      index + 1,
+      fieldIds.length > 0 ? fieldIds.length + index + 1 : index + 1,
       signatureOptions,
       signatureReference,
       annotationReference,

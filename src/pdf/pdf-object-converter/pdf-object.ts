@@ -1,24 +1,20 @@
 import PDFAbstractReference from '../node-signpdf/pdfkit/abstract_reference'
 
 interface PdfObjectConverter {
-  typeName: string
   convert: (object: any, encryptFunction: any) => string
-  isMyType: (object: any) => string | undefined
+  isTypeMatches: (object: any) => boolean | undefined
 }
 
 const primitiveStringHandler: PdfObjectConverter = {
-  typeName: 'string',
   convert(object: any) {
     return `/${object}`
   },
-  isMyType(object: any) {
-    return typeof object === 'string' ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return typeof object === 'string'
   },
 }
 
 const stringHandler: PdfObjectConverter = {
-  typeName: 'String',
-
   convert(object: any, encryptFunction: any) {
     const escapable: { [key: string]: string } = {
       '\n': '\\n',
@@ -74,33 +70,30 @@ const stringHandler: PdfObjectConverter = {
 
     return `(${string})`
   },
-  isMyType(object: any) {
-    return object instanceof String ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return object instanceof String
   },
 }
 
 const bufferHandler: PdfObjectConverter = {
-  typeName: 'buffer',
   convert(object: any) {
     return `<${object.toString('hex')}>`
   },
-  isMyType(object: any) {
-    return Buffer.isBuffer(object) ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return Buffer.isBuffer(object)
   },
 }
 
 const PDFAbstrastReferenceHandler: PdfObjectConverter = {
-  typeName: 'PDFAbstractReference',
   convert(object: any) {
     return (object as any).toString()
   },
-  isMyType(object: any) {
-    return object instanceof PDFAbstractReference ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return object instanceof PDFAbstractReference
   },
 }
 
 const dateHandler: PdfObjectConverter = {
-  typeName: 'Date',
   convert(object: any, encryptFunction: any) {
     const escapableRe = /[\n\r\t\b\f\(\)\\]/g
     const escapable: { [key: string]: string } = {
@@ -131,24 +124,22 @@ const dateHandler: PdfObjectConverter = {
 
     return `(${string})`
   },
-  isMyType(object: any) {
-    return object instanceof Date ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return object instanceof Date
   },
 }
 
 const arrayHandler: PdfObjectConverter = {
-  typeName: 'Array',
   convert(object: any, encryptFunction: any) {
     const items = object.map((e: any) => convertObject(e, encryptFunction)).join(' ')
     return `[${items}]`
   },
-  isMyType(object: any) {
-    return Array.isArray(object) ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return Array.isArray(object)
   },
 }
 
 const objectHandler: PdfObjectConverter = {
-  typeName: 'Object',
   convert(object: any, encryptFunction: any) {
     const out = ['<<']
 
@@ -169,13 +160,12 @@ const objectHandler: PdfObjectConverter = {
 
     return out.join('\n')
   },
-  isMyType(object: any) {
-    return {}.toString.call(object) === '[object Object]' ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return {}.toString.call(object) === '[object Object]'
   },
 }
 
 const numberHandler: PdfObjectConverter = {
-  typeName: 'number',
   convert(object: any) {
     let result
 
@@ -187,17 +177,16 @@ const numberHandler: PdfObjectConverter = {
 
     return String(result)
   },
-  isMyType(object: any) {
-    return typeof object === 'number' ? this.typeName : undefined
+  isTypeMatches(object: any) {
+    return typeof object === 'number'
   },
 }
 
 const defaultHandler: PdfObjectConverter = {
-  typeName: 'default',
   convert(object: any) {
     return `${object}`
   },
-  isMyType(object: any) {
+  isTypeMatches(object: any) {
     throw new Error(`Default handle doesnt have isMyType method`)
   },
 }
@@ -214,7 +203,7 @@ const converters = [
 ]
 
 export const convertObject = (object: any, encryptFunction: any = null) => {
-  const selectedConverter = converters.find((converter) => converter.isMyType(object) != null)
+  const selectedConverter = converters.find((converter) => converter.isTypeMatches(object))
   const converter = selectedConverter != null ? selectedConverter.convert : defaultHandler.convert
 
   return converter(object, encryptFunction)

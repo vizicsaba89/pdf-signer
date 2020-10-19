@@ -2,11 +2,11 @@ import { getImage } from '../image/appender'
 import { AnnotationAppearanceOptions } from '../model/annotation-appearance-options'
 import { CoordinateData } from '../model/coordinate-data'
 import { ImageDetails } from '../model/image-details'
-import { PdfKitMock } from '../model/pdf-kit-mock'
 import { SignatureDetails } from '../model/signature-details'
 import { SignatureOptions } from '../model/signature-options'
 import { XObject } from '../model/x-object'
 import { DEFAULT_BYTE_RANGE_PLACEHOLDER, DEFAULT_SIGNATURE_LENGTH } from './const'
+import { PdfCreator } from './pdf-creator'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
 
 const specialCharacters = [
@@ -28,34 +28,35 @@ const specialCharacters = [
   'Ű',
 ]
 
-const pdfkitAddPlaceholder = async ({
-  pdf,
-  pdfBuffer,
-  signatureLength = DEFAULT_SIGNATURE_LENGTH,
-  byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
-  signatureOptions,
-}: {
-  pdf: PdfKitMock
-  pdfBuffer: Buffer
-  signatureLength?: number
-  byteRangePlaceholder?: string
-  signatureOptions: SignatureOptions
-}) => {
-  const acroFormPosition = pdfBuffer.lastIndexOf('/Type /AcroForm')
-  const isAcroFormExists = acroFormPosition !== -1
-  let acroFormId
-  let fieldIds: PDFKitReferenceMock[] = []
+export const appendFont = (pdf: PdfCreator, fontName: string) => {
+  const fontObject = getFont(fontName)
+  const fontReference = pdf.append(fontObject)
 
-  if (isAcroFormExists) {
-    const acroForm = getAcroForm(pdfBuffer, acroFormPosition)
-    acroFormId = getAcroFormId(acroForm)
-    fieldIds = getFieldIds(acroForm)
-  }
+  return fontReference
+}
 
-  const FONT = getFont(pdf, 'Helvetica')
-  const ZAF = getFont(pdf, 'ZapfDingbats')
-  const APFONT = getFont(pdf, 'Helvetica')
+export const appendAcroform = (
+  pdf: PdfCreator,
+  fieldIds: PDFKitReferenceMock[],
+  widgetReferenceList: PDFKitReferenceMock[],
+  fonts: { name: string; ref: PDFKitReferenceMock }[],
+  acroFormId?: any,
+) => {
+  /*
+  const fontObject = getFont('Helvetica')
+  const fontReference = pdf.append(fontObject)
 
+  const zafObject = getFont('ZapfDingbats')
+  const zafReference = pdf.append(zafObject)
+*/
+
+  const acroformObject = getAcroform(fieldIds, widgetReferenceList, fonts)
+  const acroformReference = pdf.append(acroformObject, acroFormId)
+
+  return acroformReference
+}
+
+export const appendImage = async (pdf: PdfCreator, signatureOptions: SignatureOptions) => {
   const hasImg = signatureOptions.annotationAppearanceOptions?.imageDetails?.imagePath
 
   const IMG = hasImg
@@ -65,60 +66,91 @@ const pdfkitAddPlaceholder = async ({
       )
     : undefined
 
-  const AP = getAnnotationApparance(pdf, IMG, APFONT, signatureOptions)
-  const SIGNATURE = getSignature(
+  return IMG
+}
+
+export const appendAnnotationApparance = (
+  pdf: PdfCreator,
+  signatureOptions: SignatureOptions,
+  apFontReference: PDFKitReferenceMock,
+  image?: PDFKitReferenceMock,
+) => {
+  const apObject = getAnnotationApparance(image, apFontReference)
+  const apReference = pdf.appendStream(
+    apObject,
+    getStream(
+      signatureOptions.annotationAppearanceOptions,
+      image != null ? image.index : undefined,
+    ),
+  )
+
+  return apReference
+}
+
+export const appendWidget = (
+  pdf: PdfCreator,
+  widgetIndex: number,
+  signatureOptions: SignatureOptions,
+  signatureReference: PDFKitReferenceMock,
+  apReference: PDFKitReferenceMock,
+) => {
+  const widgetObject = getWidget(
+    widgetIndex,
+    signatureReference,
+    apReference,
+    signatureOptions.annotationAppearanceOptions.signatureCoordinates,
     pdf,
+  )
+  const widgetReference = pdf.append(widgetObject)
+
+  return widgetReference
+}
+
+export const appendSignature = (
+  pdf: PdfCreator,
+  signatureOptions: SignatureOptions,
+  signatureLength = DEFAULT_SIGNATURE_LENGTH,
+  byteRangePlaceholder = DEFAULT_BYTE_RANGE_PLACEHOLDER,
+) => {
+  const signatureObject = getSignature(
     byteRangePlaceholder,
     signatureLength,
     signatureOptions.reason,
     signatureOptions,
   )
-  const WIDGET = getWidget(
-    pdf,
-    fieldIds,
-    SIGNATURE,
-    AP,
-    signatureOptions.annotationAppearanceOptions.signatureCoordinates,
-  )
+  const signatureReference = pdf.append(signatureObject)
 
-  const ACROFORM = getAcroform(pdf, fieldIds, WIDGET, FONT, ZAF, acroFormId)
-
-  return {
-    signature: SIGNATURE,
-    form: ACROFORM,
-    widget: WIDGET,
-  }
+  return signatureReference
 }
 
 const getAcroform = (
-  pdf: PdfKitMock,
   fieldIds: PDFKitReferenceMock[],
-  WIDGET: PDFKitReferenceMock,
-  FONT: PDFKitReferenceMock,
-  ZAF: PDFKitReferenceMock,
-  acroFormId: number | undefined,
+  WIDGET: PDFKitReferenceMock[],
+  fonts: { name: string; ref: PDFKitReferenceMock }[],
 ) => {
-  return pdf.ref(
-    {
-      Type: 'AcroForm',
-      SigFlags: 3,
-      Fields: [...fieldIds, WIDGET],
-      DR: `<</Font\n<</Helvetica ${FONT.index} 0 R/ZapfDingbats ${ZAF.index} 0 R>>\n>>`,
-    },
-    acroFormId,
+  const mergedFonts = fonts.reduce(
+    (prev, curr) => prev + `/${curr.name} ${curr.ref.toString()} `,
+    '',
   )
+
+  return {
+    Type: 'AcroForm',
+    SigFlags: 3,
+    Fields: [...fieldIds, ...WIDGET],
+    DR: `<</Font\n<<${mergedFonts.trim()}>>\n>>`,
+  }
 }
 
 const getWidget = (
-  pdf: PdfKitMock,
-  fieldIds: PDFKitReferenceMock[],
+  widgetIndex: number,
   signature: PDFKitReferenceMock,
   AP: PDFKitReferenceMock,
   signatureCoordinates: CoordinateData,
+  pdf: PdfCreator,
 ) => {
   const signatureBaseName = 'Signature'
 
-  return pdf.ref({
+  return {
     Type: 'Annot',
     Subtype: 'Widget',
     FT: 'Sig',
@@ -129,20 +161,15 @@ const getWidget = (
       signatureCoordinates.top,
     ],
     V: signature,
-    T: new String(signatureBaseName + (fieldIds.length + 1)), // eslint-disable-line no-new-wrappers
+    T: new String(signatureBaseName + widgetIndex), // eslint-disable-line no-new-wrappers
     F: 4,
     AP: `<</N ${AP.index} 0 R>>`,
-    P: pdf.page.dictionary, // eslint-disable-line no-underscore-dangle
+    P: pdf.getCurrentWidgetPageReference(), // eslint-disable-line no-underscore-dangle // TODO REPLACE
     DA: new String('/Helvetica 0 Tf 0 g'), // eslint-disable-line no-new-wrappers
-  })
+  }
 }
 
-const getAnnotationApparance = (
-  pdf: PdfKitMock,
-  IMG: any | undefined,
-  APFONT: PDFKitReferenceMock,
-  signatureOptions: SignatureOptions,
-) => {
+const getAnnotationApparance = (IMG: any | undefined, APFONT: PDFKitReferenceMock) => {
   let resources = `<</Font <<\n/f1 ${APFONT.index} 0 R\n>>>>`
 
   if (IMG != null) {
@@ -159,11 +186,7 @@ const getAnnotationApparance = (
     Resources: resources,
   }
 
-  return pdf.ref(
-    xObject,
-    undefined,
-    getStream(signatureOptions.annotationAppearanceOptions, IMG != null ? IMG.index : undefined),
-  )
+  return xObject
 }
 
 const getStream = (
@@ -221,48 +244,22 @@ const generateSignatureContent = (detail: SignatureDetails) => {
   `
 }
 
-const getFieldIds = (acroForm: string) => {
-  let fieldIds: PDFKitReferenceMock[] = []
-  const acroFormFields = acroForm.slice(acroForm.indexOf('/Fields [') + 9, acroForm.indexOf(']'))
-  fieldIds = acroFormFields
-    .split(' ')
-    .filter((_element, index) => index % 3 === 0)
-    .map(fieldId => new PDFKitReferenceMock(fieldId))
-
-  return fieldIds
-}
-
-const getAcroForm = (pdfBuffer: Buffer, acroFormPosition: number) => {
-  const pdfSlice = pdfBuffer.slice(acroFormPosition - 12)
-  const acroForm = pdfSlice.slice(0, pdfSlice.indexOf('endobj')).toString()
-
-  return acroForm
-}
-
-const getAcroFormId = (acroForm: string) => {
-  const acroFormFirsRow = acroForm.split('\n')[0]
-  const acroFormId = parseInt(acroFormFirsRow.split(' ')[0])
-
-  return acroFormId
-}
-
-const getFont = (pdf: PdfKitMock, baseFont: string) => {
-  return pdf.ref({
+const getFont = (baseFont: string) => {
+  return {
     Type: 'Font',
     BaseFont: baseFont,
     Encoding: 'WinAnsiEncoding',
     Subtype: 'Type1',
-  })
+  }
 }
 
 const getSignature = (
-  pdf: PdfKitMock,
   byteRangePlaceholder: string,
   signatureLength: number,
   reason: string,
   signatureDetails: SignatureOptions,
 ) => {
-  return pdf.ref({
+  return {
     Type: 'Sig',
     Filter: 'Adobe.PPKLite',
     SubFilter: 'adbe.pkcs7.detached',
@@ -273,13 +270,13 @@ const getSignature = (
     ContactInfo: new String(`${signatureDetails.email}`),
     Name: new String(`${signatureDetails.signerName}`),
     Location: new String(`${signatureDetails.location}`),
-  })
+  }
 }
 
 const getConvertedText = (text: string) => {
   return text
     .split('')
-    .map(character => {
+    .map((character) => {
       return specialCharacters.includes(character)
         ? getOctalCodeFromCharacter(character)
         : character
@@ -290,5 +287,3 @@ const getConvertedText = (text: string) => {
 const getOctalCodeFromCharacter = (character: string) => {
   return '\\' + character.charCodeAt(0).toString(8)
 }
-
-export default pdfkitAddPlaceholder

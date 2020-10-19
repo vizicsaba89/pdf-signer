@@ -1,3 +1,5 @@
+import { PdfCreator } from '../node-signpdf/pdf-creator'
+
 const MARKERS = [
   0xffc0,
   0xffc1,
@@ -33,7 +35,7 @@ interface JPEGData {
   [key: string]: any
 }
 
-export const getJpgImage = (pdf: any, data: any) => {
+export const getJpgImage = (pdf: PdfCreator, data: any) => {
   if (data.readUInt16BE(0) !== 0xffd8) {
     throw 'SOI not found in JPEG'
   }
@@ -77,7 +79,7 @@ export const getJpgImage = (pdf: any, data: any) => {
   if (colorSpace === 'DeviceCMYK') {
     baseJpgData['Decode'] = [1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0]
   }
-  const image = pdf.ref(baseJpgData, null, data)
+  const image = pdf.appendStream(baseJpgData, data)
 
   return image
 }

@@ -1,6 +1,6 @@
 import PNG from 'png-js'
 import zlib from 'zlib'
-import { PdfKitMock } from '../model/pdf-kit-mock'
+import { PdfCreator } from '../node-signpdf/pdf-creator'
 
 interface PNGBaseData {
   Type: string
@@ -12,7 +12,7 @@ interface PNGBaseData {
   [key: string]: any
 }
 
-export const getPngImage = async (pdf: PdfKitMock, data: Buffer) => {
+export const getPngImage = async (pdf: PdfCreator, data: Buffer) => {
   const image = new PNG(data)
   const hasAlphaChannel = image.hasAlphaChannel
 
@@ -26,7 +26,7 @@ export const getPngImage = async (pdf: PdfKitMock, data: Buffer) => {
   }
 
   if (!hasAlphaChannel) {
-    const params = pdf.ref({
+    const params = pdf.append({
       Predictor: 15,
       Colors: image.colors,
       BitsPerComponent: image.bits,
@@ -39,7 +39,7 @@ export const getPngImage = async (pdf: PdfKitMock, data: Buffer) => {
   if (image.palette.length === 0) {
     pngBaseData['ColorSpace'] = image.colorSpace
   } else {
-    const palette = pdf.ref({
+    const palette = pdf.append({
       stream: new Buffer(image.palette),
     })
     pngBaseData['ColorSpace'] = ['Indexed', 'DeviceRGB', image.palette.length / 3 - 1, palette]
@@ -67,7 +67,7 @@ export const getPngImage = async (pdf: PdfKitMock, data: Buffer) => {
     pngBaseData['Mask'] = sMask
   }
 
-  const pngImage = pdf.ref(pngBaseData, undefined, image.imgData)
+  const pngImage = pdf.appendStream(pngBaseData, image.imgData)
 
   return pngImage
 }
@@ -124,10 +124,10 @@ const getSplittedAlphaChannelAndImageData = async (
   return alpaChannelAndImageDataPromise
 }
 
-const getSmask = (pdf: PdfKitMock, image: any, alphaChannel: Buffer) => {
+const getSmask = (pdf: PdfCreator, image: any, alphaChannel: Buffer) => {
   let sMask
   if (image.hasAlphaChannel) {
-    sMask = pdf.ref({
+    sMask = pdf.append({
       Type: 'XObject',
       Subtype: 'Image',
       Height: image.height,

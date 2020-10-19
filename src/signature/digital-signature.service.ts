@@ -28,6 +28,32 @@ export const getSignature = (
   return signature
 }
 
+export const getOnlyRawSignature = (
+  pdfWithByteRange: Buffer,
+  p12Buffer: Buffer,
+  placeholderLength: number,
+  certPassword: string,
+): string => {
+  const p12Data: forge.pkcs12.Pkcs12Pfx = certUtil.getDataFromP12Cert(p12Buffer, certPassword)
+
+  const certBags: forge.pkcs12.Bag[] = certUtil.getCertBags(p12Data)
+  const keyBags: forge.pkcs12.Bag[] = getKeyBags(p12Data)
+  const privateKey: any = getPrivateKey(keyBags)
+
+  const p7: forge.pkcs7.PkcsSignedData = forge.pkcs7.createSignedData()
+  p7.content = forge.util.createBuffer(pdfWithByteRange.toString('binary'))
+
+  const certificate: forge.pki.Certificate = getCertificate(p7, certBags, privateKey)
+  const signer: any = getSigner(privateKey, certificate)
+
+  p7.addSigner(signer)
+  p7.sign({ detached: true })
+
+  const rawSignature: string = getRawSignature(p7, placeholderLength)
+
+  return rawSignature
+}
+
 const getKeyBags = (p12: forge.pkcs12.Pkcs12Pfx): forge.pkcs12.Bag[] => {
   const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
     forge.pki.oids.pkcs8ShroudedKeyBag
@@ -85,7 +111,7 @@ const getRawSignature = (p7: forge.pkcs7.PkcsSignedData, placeholderLength: numb
   return rawSignature
 }
 
-const getSignatureFromRawSignature = (rawSignature: string, placeholderLength: number): string => {
+export const getSignatureFromRawSignature = (rawSignature: string, placeholderLength: number): string => {
   let signature = Buffer.from(rawSignature, 'binary').toString('hex')
   signature += Buffer.from(
     String.fromCharCode(0).repeat(placeholderLength / 2 - rawSignature.length),

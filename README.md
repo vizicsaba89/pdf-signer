@@ -4,6 +4,11 @@ A JavaScript PDF signer for node.
 
 This package is based on [vbuch](https://www.npmjs.com/~vbuch) work: [node-signpdf](https://www.npmjs.com/package/node-signpdf).
 
+## PDF versions
+Pdf-signer cant handle pdf stream in the moment. It only can works with pdf which built on XREF tables. 
+
+For more information look at the  NoahCardoza's [issue](https://github.com/vizicsaba89/pdf-signer/issues/16)
+
 ## Installation
 
 Installation uses the npm package manager. Just type the following command after installing npm.

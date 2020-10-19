@@ -1,7 +1,14 @@
 import { SignatureOptions } from '../model/signature-options'
 import { DEFAULT_SIGNATURE_LENGTH } from './const'
 import { PdfCreator } from './pdf-creator'
-import { appendAcroform, appendAnnotationApparance, appendFont, appendImage, appendSignature, appendWidget } from './pdf-kit-add-placeholder'
+import {
+  appendAcroform,
+  appendAnnotationApparance,
+  appendFont,
+  appendImage,
+  appendSignature,
+  appendWidget,
+} from './pdf-kit-add-placeholder'
 import PDFKitReferenceMock from './pdf-kit-reference-mock'
 
 const plainAddPlaceholder = async (
@@ -30,7 +37,6 @@ const plainAddPlaceholder = async (
   const helveticaFontReference = appendFont(pdfAppender, 'Helvetica')
   const zapfDingbatsFontReference = appendFont(pdfAppender, 'ZapfDingbats')
 
-
   const widgetReferenceList = annotationOnPages.map((annotationPage, index) => {
     const annotationReference = appendAnnotationApparance(
       pdfAppender,
@@ -50,7 +56,16 @@ const plainAddPlaceholder = async (
     return widgetReference
   })
 
-  const formReference = appendAcroform(pdfAppender, fieldIds, widgetReferenceList, [{name: 'Helvetica', ref: helveticaFontReference}, {name: 'ZapfDingbats', ref: zapfDingbatsFontReference}] acroFormId)
+  const formReference = appendAcroform(
+    pdfAppender,
+    fieldIds,
+    widgetReferenceList,
+    [
+      { name: 'Helvetica', ref: helveticaFontReference },
+      { name: 'ZapfDingbats', ref: zapfDingbatsFontReference },
+    ],
+    acroFormId,
+  )
 
   pdfAppender.close(formReference, widgetReferenceList)
 

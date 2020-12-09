@@ -4,7 +4,7 @@
   "description": "A JavaScript PDF signer for node.",
   "main": "dist/sign.js",
   "dependencies": {
-    "node-forge": "^0.8.2",
+    "node-forge": "^0.10.0",
     "png-js": "1.0.0",
     "rimraf": "^3.0.2",
     "typescript": "^3.7.2"

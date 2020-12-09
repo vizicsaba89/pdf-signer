@@ -5,7 +5,7 @@
   "main": "dist/sign.js",
   "dependencies": {
     "node-forge": "^0.8.2",
-    "png-js": "^0.1.1",
+    "png-js": "1.0.0",
     "rimraf": "^3.0.2",
     "typescript": "^3.7.2"
   },

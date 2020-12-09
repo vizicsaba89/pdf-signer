@@ -183,6 +183,42 @@ describe('some tests with images', () => {
 
     expect(typeof signatureHex).toBe('string')
   })
+
+  it('one sign with interlaced png', async () => {
+    const p12Buffer = fs.readFileSync(`./assets/pdf-signer.p12`)
+    const pdfBuffer = fs.readFileSync(`./assets/example.pdf`)
+    const certPassword = 'pdfsigner'
+    const signatureOptions: SignatureOptions = {
+      reason: '2',
+      email: 'test@email.com',
+      location: 'Location, LO',
+      signerName: 'Test User',
+      annotationAppearanceOptions: {
+        signatureCoordinates: { left: 0, bottom: 700, right: 190, top: 860 },
+        signatureDetails: [
+          {
+            value: 'Signed by: Kiss Béla',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 20 },
+          },
+          {
+            value: 'Date: 2019-10-11',
+            fontSize: 7,
+            transformOptions: { rotate: 0, space: 1, tilt: 0, xPos: 20, yPos: 30 },
+          },
+        ],
+        imageDetails: {
+          imagePath: './assets/certification-interlaced.png',
+          transformOptions: { rotate: 0, space: 200, stretch: 50, tilt: 0, xPos: 0, yPos: 10 },
+        },
+      },
+    }
+    const signedPdf = await sign(pdfBuffer, p12Buffer, certPassword, signatureOptions)
+
+    const { signatureHex } = extractSignature(signedPdf)
+
+    expect(typeof signatureHex).toBe('string')
+  })
 })
 
 const getSubstringIndex = (str, substring, n) => {

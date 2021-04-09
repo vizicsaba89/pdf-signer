@@ -76,8 +76,8 @@ const getAcroForm = (pdfBuffer: Buffer, acroFormPosition: number) => {
   const endobjPosition = pdfBuffer.lastIndexOf('endobj', acroFormPosition)
   const content = pdfBuffer.slice(endobjPosition, pdfBuffer.length)
   const regex = new RegExp(/(\d+)\s+0\s+obj\s+<<\s+\/Type\s+\/AcroForm\s+\/SigFlags\s+\d+\s+\/Fields\s+\[(.+)\]/, 'gm')
-  const acroFormMatch = regex.exec(content)
-  const [acroForm] = acroFormMatch
+  const acroFormMatch = regex.exec(content.toString('utf-8'))
+  const acroForm = acroFormMatch![0]
   return acroForm
 }
 

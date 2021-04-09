@@ -73,9 +73,11 @@ const plainAddPlaceholder = async (
 }
 
 const getAcroForm = (pdfBuffer: Buffer, acroFormPosition: number) => {
-  const pdfSlice = pdfBuffer.slice(acroFormPosition - 12)
-  const acroForm = pdfSlice.slice(0, pdfSlice.indexOf('endobj')).toString()
-
+  const endobjPosition = pdfBuffer.lastIndexOf('endobj', acroFormPosition)
+  const content = pdfBuffer.slice(endobjPosition, pdfBuffer.length)
+  const regex = new RegExp(/(\d+)\s+0\s+obj\s+<<\s+\/Type\s+\/AcroForm\s+\/SigFlags\s+\d+\s+\/Fields\s+\[(.+)\]/, 'gm')
+  const acroFormMatch = regex.exec(content)
+  const [acroForm] = acroFormMatch
   return acroForm
 }
 

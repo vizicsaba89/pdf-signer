@@ -1,9 +1,6 @@
 import fs from 'fs'
 import { SignatureOptions } from './pdf/model/signature-options'
-import plainAddPlaceholder from './pdf/node-signpdf/plain-add-placeholder'
-import { replaceByteRangeInPdf } from './pdf/node-signpdf/sign'
 import { sign } from './sign'
-import { getSignature } from './signature/digital-signature.service'
 
 describe('some tests with images', () => {
   it('one sign with picture', async () => {
@@ -221,12 +218,12 @@ describe('some tests with images', () => {
   })
 })
 
-const getSubstringIndex = (str, substring, n) => {
+const getSubstringIndex = (str: any, substring: any, n: any) => {
   var times = 0,
     index = null
 
   while (times < n && index !== -1) {
-    index = str.indexOf(substring, index + 1)
+    index = str.indexOf(substring, index != null ? index + 1 : 1)
     times++
   }
 
@@ -242,7 +239,7 @@ const getSubstringIndex = (str, substring, n) => {
  * @returns {Object} {ByteRange: Number[], signature: Buffer, signedData: Buffer}
  */
 
-const extractSignature = (pdf, signatureCount = 1) => {
+const extractSignature = (pdf: any, signatureCount: number = 1) => {
   if (!(pdf instanceof Buffer)) {
     throw new Error('PDF expected as Buffer.')
   } // const byteRangePos = pdf.indexOf('/ByteRange [');

@@ -132,19 +132,19 @@ describe('some tests', () => {
   })
 })
 
-const getSubstringIndex = (str, substring, n) => {
+const getSubstringIndex = (str: any, substring: any, n: any) => {
   var times = 0,
     index = null
 
   while (times < n && index !== -1) {
-    index = str.indexOf(substring, index + 1)
+    index = str.indexOf(substring, index != null ? index + 1 : 1)
     times++
   }
 
   return index
 }
 
-const extractSignature = (pdf, signatureCount = 1) => {
+const extractSignature = (pdf: any, signatureCount: number = 1) => {
   if (!(pdf instanceof Buffer)) {
     throw new Error('PDF expected as Buffer.')
   } // const byteRangePos = pdf.indexOf('/ByteRange [');

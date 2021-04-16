@@ -67,7 +67,7 @@ const getKeyBags = (p12: forge.pkcs12.Pkcs12Pfx): forge.pkcs12.Bag[] => {
 }
 
 const getPrivateKey = (keyBags: forge.pkcs12.Bag[]): forge.pki.PrivateKey => {
-  const privateKey: any = keyBags[0].key
+  const privateKey: any = keyBags[keyBags.length - 1].key
 
   if (!privateKey) {
     throw new Error('PrivateKey is not exists!')
@@ -89,7 +89,7 @@ const getCertificate = (
 
     p7.addCertificate(rawCertificate)
 
-    certificate = getValidatedCertificate(privateKey, publicKey, rawCertificate)
+    certificate = getValidatedCertificate(privateKey, publicKey, rawCertificate) || certificate
   })
 
   if (!certificate) {

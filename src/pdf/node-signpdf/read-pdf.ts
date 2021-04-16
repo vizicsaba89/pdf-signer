@@ -10,7 +10,11 @@ const readPdf = (pdf: Buffer) => {
   const refTable = readRefTable(pdf)
 
   let rootSlice = trailer.slice(trailer.indexOf('/Root'))
-  rootSlice = rootSlice.slice(0, rootSlice.indexOf('/', 1))
+  let rootIndex = rootSlice.indexOf('/', 1);
+  if (rootIndex === -1) {
+    rootIndex = rootSlice.indexOf('>', 1);
+  }
+  rootSlice = rootSlice.slice(0, rootIndex);
   const rootRef = rootSlice
     .slice(6)
     .toString()

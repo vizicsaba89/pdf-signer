@@ -47,7 +47,7 @@ export const getPngImage = async (pdf: PdfCreator, data: Buffer) => {
 
   if (image.transparency.grayscale != null) {
     const val = image.transparency.grayscale
-    pngBaseData['Mask'] = [val, val]
+    pngBaseData['SMask'] = [val, val]
   } else if (image.transparency.rgb) {
     const { rgb } = image.transparency
     const mask: any[] = []
@@ -55,7 +55,7 @@ export const getPngImage = async (pdf: PdfCreator, data: Buffer) => {
     for (let x of rgb) {
       mask.push(x, x)
     }
-    pngBaseData['Mask'] = mask
+    pngBaseData['SMask'] = mask
   } else if (image.transparency.indexed) {
     const indexedAlphaChannel = await getIndexedAlphaChannel(image)
     image.alphaChannel = indexedAlphaChannel
@@ -64,7 +64,8 @@ export const getPngImage = async (pdf: PdfCreator, data: Buffer) => {
     image.imgData = imgData
     image.alphaChannel = alphaChannel
     const sMask = getSmask(pdf, image, alphaChannel)
-    pngBaseData['Mask'] = sMask
+    pngBaseData['SMask'] = sMask
+    pngBaseData['Length'] = imgData.length
   }
 
   const pngImage = pdf.appendStream(pngBaseData, image.imgData)
@@ -127,17 +128,18 @@ const getSplittedAlphaChannelAndImageData = async (
 const getSmask = (pdf: PdfCreator, image: any, alphaChannel: Buffer) => {
   let sMask
   if (image.hasAlphaChannel) {
-    sMask = pdf.append({
+    const sMaskData: PNGBaseData = {
       Type: 'XObject',
       Subtype: 'Image',
-      Height: image.height,
-      Width: image.width,
       BitsPerComponent: 8,
+      Width: image.width,
+      Height: image.height,
+      Length: alphaChannel.length,
       Filter: 'FlateDecode',
       ColorSpace: 'DeviceGray',
-      Decode: [0, 1],
-      stream: alphaChannel,
-    })
+    }
+
+    sMask = pdf.appendStream(sMaskData, alphaChannel)
   }
 
   return sMask

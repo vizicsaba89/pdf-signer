@@ -1,4 +1,5 @@
 assets/
+src/
 .gitignore
 .prettierrc.json
 LICENSE

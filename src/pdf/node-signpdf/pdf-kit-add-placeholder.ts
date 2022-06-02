@@ -1,4 +1,4 @@
-import { getImage } from '../image/appender'
+import { getImage, getImageFromBase64 } from '../image/appender'
 import { AnnotationAppearanceOptions } from '../model/annotation-appearance-options'
 import { CoordinateData } from '../model/coordinate-data'
 import { ImageDetails } from '../model/image-details'
@@ -57,16 +57,27 @@ export const appendAcroform = (
 }
 
 export const appendImage = async (pdf: PdfCreator, signatureOptions: SignatureOptions) => {
-  const hasImg = signatureOptions.annotationAppearanceOptions?.imageDetails?.imagePath
+  const imagePath = signatureOptions.annotationAppearanceOptions?.imageDetails?.imagePath;
+  const base64 = signatureOptions.annotationAppearanceOptions?.imageDetails?.base64;
 
-  const IMG = hasImg
-    ? await getImage(
-        (signatureOptions.annotationAppearanceOptions as any).imageDetails.imagePath,
+  const hasImg = imagePath || base64;
+
+  if(!hasImg) {
+    return undefined;
+  }
+
+  if(imagePath) {
+    return await getImage(
+        imagePath,
         pdf,
-      )
-    : undefined
+      );
+  }
 
-  return IMG
+ if(base64) {
+   return await getImageFromBase64(base64, pdf);
+ }
+
+  return undefined;
 }
 
 export const appendAnnotationApparance = (

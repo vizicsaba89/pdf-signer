@@ -111,7 +111,10 @@ const getRawSignature = (p7: forge.pkcs7.PkcsSignedData, placeholderLength: numb
   return rawSignature
 }
 
-export const getSignatureFromRawSignature = (rawSignature: string, placeholderLength: number): string => {
+export const getSignatureFromRawSignature = (
+  rawSignature: string,
+  placeholderLength: number,
+): string => {
   let signature = Buffer.from(rawSignature, 'binary').toString('hex')
   signature += Buffer.from(
     String.fromCharCode(0).repeat(placeholderLength / 2 - rawSignature.length),
@@ -132,10 +135,6 @@ const getSigner = (privateKey: any, certificate: forge.pki.Certificate): any => 
       },
       {
         type: forge.pki.oids.messageDigest,
-      },
-      {
-        type: forge.pki.oids.signingTime,
-        value: new Date().toString(),
       },
     ],
   }

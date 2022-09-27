@@ -35,7 +35,7 @@ describe('some tests', () => {
 
     const converted = convertObject(testObject)
     // TODO will fail on CI/CD
-    expect(converted).toBe(`(D:20200519220000Z)`)
+    expect(converted).toBe(`(D:20200520000000Z)`)
   })
 
   it('Array convert', async () => {

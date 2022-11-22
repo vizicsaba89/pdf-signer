@@ -1,10 +1,13 @@
 {
-  "name": "pdf-signer",
-  "version": "1.1.3",
+  "name": "@ginixsan/pdf-signer",
+  "version": "1.1.4",
   "description": "A JavaScript PDF signer for node.",
   "main": "dist/sign.js",
+  "publishConfig": {
+  "registry": "https://npm.pkg.github.com"
+  },
   "dependencies": {
-    "node-forge": "^1.3.0",
+    "node-forge": "^1.3.1",
     "png-js": "1.0.0"
   },
   "devDependencies": {
@@ -24,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vizicsaba89/pdf-signer.git"
+    "url": "git+https://github.com/ginixsa/pdf-signer.git"
   },
   "author": "",
   "license": "MIT",
@@ -36,9 +39,9 @@
     "digital signature"
   ],
   "bugs": {
-    "url": "https://github.com/vizicsaba89/pdf-signer/issues"
+    "url": "https://github.com/ginixsan/pdf-signer/issues"
   },
-  "homepage": "https://github.com/vizicsaba89/pdf-signer#readme",
+  "homepage": "https://github.com/ginixsan/pdf-signer#readme",
   "jest": {
     "globals": {
       "ts-jest": {
